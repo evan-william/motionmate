@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f2535"/>
+      <stop offset="100%" stop-color="#07111c"/>
+    </linearGradient>
+    <linearGradient id="mgrad" x1="80" y1="120" x2="432" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#36d4ef"/>
+      <stop offset="60%" stop-color="#18B8D6"/>
+      <stop offset="100%" stop-color="#0d7a90"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  <!-- Subtle background glow behind M -->
+  <ellipse cx="256" cy="256" rx="180" ry="160" fill="rgba(24,184,214,0.07)"/>
+  <!-- Border -->
+  <rect width="512" height="512" rx="110" fill="none" stroke="rgba(24,184,214,0.18)" stroke-width="2"/>
+  <!-- M letterform - thick and bold -->
+  <path d="M90 370V142l166 148 166-148v228"
+        stroke="url(#mgrad)"
+        stroke-width="44"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+        filter="url(#glow)"/>
+  <!-- Accent dot -->
+  <circle cx="256" cy="422" r="22" fill="#36d4ef" opacity="0.85" filter="url(#softglow)"/>
+  <!-- Tiny inner ring on dot -->
+  <circle cx="256" cy="422" r="10" fill="#18B8D6"/>
+</svg>

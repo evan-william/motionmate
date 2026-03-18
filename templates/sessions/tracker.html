@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sesi — MotionMate</title>
+  <!-- MotionMate Icons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <!-- / Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#04090f;--bg-2:#070e17;--bg-3:#0b1520;--bg-card:#08111c;--border:rgba(24,184,214,0.08);--border-accent:rgba(24,184,214,0.35);--blue:#18B8D6;--blue-dim:rgba(24,184,214,0.10);--blue-glow:rgba(24,184,214,0.28);--blue-bright:#36d4ef;--blue-dark:#0d7a90;--white:#eef4f8;--white-dim:rgba(238,244,248,0.7);--text-muted:#4a6375;--text-sub:#7a97ab;--danger:#ff4f5e;--warning:#f59e0b;--success:#22c55e;--radius:10px;--radius-lg:16px;--radius-xl:24px;--font-body:'Outfit',sans-serif;--font-mono:'JetBrains Mono',monospace;--nav-h:68px;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.3;pointer-events:none;z-index:0}
+    .bg-orb{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(24,184,214,0.07) 0%,transparent 70%);top:-150px;right:-150px;pointer-events:none;z-index:0;animation:orbFloat 12s ease-in-out infinite}
+    @keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;background:rgba(4,9,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .nav__brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--white)}
+    .nav__logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#04090f;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:14px;border-radius:8px;box-shadow:0 0 18px var(--blue-glow)}
+    .nav__logo-text{font-weight:700;font-size:16px;letter-spacing:-0.3px}
+    .nav__session-info{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted);font-family:var(--font-mono)}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite;box-shadow:0 0 8px var(--blue);flex-shrink:0}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;position:relative;z-index:2}
+    .inner{max-width:1100px;margin:0 auto;padding:0 2.5rem}
+    .tracker-grid{display:grid;grid-template-columns:1fr 400px;gap:1.5rem;align-items:start}
+    /* Pose camera area */
+    .camera-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;position:relative}
+    .camera-area{width:100%;aspect-ratio:16/9;background:var(--bg-3);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .camera-area canvas{position:absolute;inset:0;width:100%;height:100%}
+    .camera-placeholder-inner{text-align:center;position:relative;z-index:2}
+    .camera-big-icon{font-size:5rem;opacity:.2;margin-bottom:1.5rem}
+    .camera-status-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--warning);font-size:12px;font-family:var(--font-mono);padding:7px 16px;border-radius:20px;letter-spacing:.5px;margin-bottom:.75rem}
+    .camera-desc{font-size:13px;color:var(--text-muted);max-width:300px;line-height:1.6}
+    .camera-overlay-top{position:absolute;top:0;left:0;right:0;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(4,9,15,0.8),transparent);z-index:3}
+    .camera-overlay-bot{position:absolute;bottom:0;left:0;right:0;padding:1rem 1.25rem;background:linear-gradient(to top,rgba(4,9,15,0.85),transparent);z-index:3;display:flex;align-items:center;justify-content:space-between}
+    .accuracy-pill{display:flex;align-items:center;gap:6px;background:rgba(24,184,214,0.15);border:1px solid var(--border-accent);border-radius:20px;padding:5px 14px;font-size:12px;font-family:var(--font-mono);color:var(--blue)}
+    .form-feedback{font-size:12px;font-family:var(--font-mono);color:var(--white-dim);background:rgba(8,17,28,0.7);padding:5px 12px;border-radius:6px}
+    .camera-card-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+    .cam-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-muted);border:1px solid var(--border);padding:8px 16px;border-radius:var(--radius);font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all .2s;text-decoration:none}
+    .cam-btn:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    .cam-btn--danger{color:var(--danger);}
+    .cam-btn--danger:hover{border-color:rgba(255,79,94,.4);color:var(--danger);background:rgba(255,79,94,.08)}
+    /* Side controls */
+    .controls-col{display:flex;flex-direction:column;gap:1rem}
+    .exercise-info-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+    .ex-info-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+    .ex-info-icon{width:44px;height:44px;background:var(--blue-dim);border:1px solid var(--border-accent);border-radius:10px;display:grid;place-items:center;color:var(--blue);font-size:20px;flex-shrink:0}
+    .ex-info-cat{font-size:10px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+    .ex-info-name{font-size:16px;font-weight:800;letter-spacing:-0.5px}
+    .ex-info-body{padding:1.25rem 1.5rem}
+    .ex-spec-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+    .ex-spec{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center}
+    .ex-spec-val{font-size:1.2rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);letter-spacing:-0.5px}
+    .ex-spec-label{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+    .ex-progress-bar-wrap{background:var(--bg-3);border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px}
+    .ex-progress-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--blue-bright));transition:width .4s ease}
+    .ex-progress-foot{display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);color:var(--text-muted)}
+    /* Timer card */
+    .timer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;text-align:center;position:relative;overflow:hidden}
+    .timer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent)}
+    .timer-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px}
+    .timer-display{font-size:3.5rem;font-weight:800;font-family:var(--font-mono);letter-spacing:-2px;color:var(--white);line-height:1;margin-bottom:1.25rem}
+    .timer-display.running{color:var(--blue);text-shadow:0 0 30px rgba(24,184,214,0.4)}
+    .timer-display.paused{color:var(--warning)}
+    .timer-btn-row{display:flex;gap:8px;justify-content:center}
+    .timer-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:var(--radius);font-family:var(--font-body);font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .25s}
+    .timer-btn-start{background:var(--blue);color:#04090f;box-shadow:0 0 20px rgba(24,184,214,.3)}
+    .timer-btn-start:hover{background:var(--blue-bright);box-shadow:0 0 35px rgba(24,184,214,.5)}
+    .timer-btn-pause{background:rgba(245,158,11,.15);color:var(--warning);border:1px solid rgba(245,158,11,.3)}
+    .timer-btn-pause:hover{background:rgba(245,158,11,.25)}
+    .timer-btn-reset{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+    .timer-btn-reset:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    /* Reps counter */
+    .reps-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem}
+    .reps-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+    .reps-title{font-size:13px;font-weight:700}
+    .set-badges{display:flex;gap:4px}
+    .set-badge{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);cursor:pointer;transition:all .2s}
+    .set-badge.done{background:var(--blue-dim);border-color:var(--border-accent);color:var(--blue)}
+    .set-badge.active{background:var(--blue);border-color:var(--blue);color:#04090f;box-shadow:0 0 12px rgba(24,184,214,.4)}
+    .reps-counter{display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1.25rem}
+    .rep-dec,.rep-inc{width:48px;height:48px;border-radius:12px;border:none;cursor:pointer;font-size:1.5rem;display:grid;place-items:center;transition:all .2s;font-weight:700}
+    .rep-dec{background:rgba(255,255,255,.06);color:var(--text-sub)}
+    .rep-dec:hover{background:rgba(255,79,94,.12);color:var(--danger)}
+    .rep-dec:active{transform:scale(.9)}
+    .rep-inc{background:var(--blue-dim);color:var(--blue);border:1px solid var(--border-accent)}
+    .rep-inc:hover{background:var(--blue);color:#04090f;box-shadow:0 0 20px rgba(24,184,214,.35)}
+    .rep-inc:active{transform:scale(.9)}
+    .rep-count{font-size:4rem;font-weight:800;font-family:var(--font-mono);color:var(--white);letter-spacing:-3px;min-width:80px;text-align:center;line-height:1;animation:repPop .12s ease}
+    @keyframes repPop{0%{transform:scale(1.2)}100%{transform:scale(1)}}
+    .rep-target{font-size:13px;color:var(--text-muted);font-family:var(--font-mono);text-align:center;margin-bottom:1.25rem}
+    .rep-target span{color:var(--blue)}
+    .rep-pip-row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:1rem}
+    .rep-pip{width:14px;height:14px;border-radius:3px;background:var(--bg-3);border:1px solid var(--border);transition:all .2s}
+    .rep-pip.done{background:var(--blue);border-color:var(--blue);box-shadow:0 0 6px rgba(24,184,214,.4)}
+    .rep-pip.current{background:rgba(24,184,214,.3);border-color:var(--border-accent)}
+    .next-set-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue-dim);border:1px solid var(--border-accent);color:var(--blue);padding:10px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;border:1px solid var(--border-accent)}
+    .next-set-btn:hover{background:var(--blue);color:#04090f;box-shadow:0 0 20px rgba(24,184,214,.35)}
+    .next-set-btn:disabled{opacity:.4;cursor:not-allowed}
+    .finish-btn-wrap{margin-top:.5rem}
+    .finish-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--blue);color:#04090f;padding:13px;border-radius:var(--radius-lg);font-size:15px;font-weight:700;cursor:pointer;border:none;transition:all .25s;box-shadow:0 0 25px rgba(24,184,214,.35)}
+    .finish-btn:hover{background:var(--blue-bright);box-shadow:0 0 40px rgba(24,184,214,.55);transform:translateY(-1px)}
+    /* Accuracy slider */
+    .accuracy-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem}
+    .accuracy-title{font-size:13px;font-weight:700;margin-bottom:1rem}
+    .accuracy-display{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+    .accuracy-ring{position:relative;width:70px;height:70px;flex-shrink:0}
+    .accuracy-ring svg{transform:rotate(-90deg)}
+    .ring-track-s{fill:none;stroke:var(--bg-3);stroke-width:7}
+    .ring-fill-s{fill:none;stroke:var(--blue);stroke-width:7;stroke-linecap:round;stroke-dasharray:175;transition:stroke-dashoffset .5s ease;filter:drop-shadow(0 0 5px var(--blue))}
+    .acc-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;font-family:var(--font-mono);color:var(--blue)}
+    .acc-note{font-size:12px;color:var(--text-muted);line-height:1.5}
+    .accuracy-slider{width:100%;appearance:none;height:6px;border-radius:3px;background:var(--bg-3);outline:none;cursor:pointer}
+    .accuracy-slider::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:var(--blue);cursor:pointer;box-shadow:0 0 10px var(--blue-glow)}
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(4,9,15,0.85);backdrop-filter:blur(12px);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem}
+    .modal-backdrop.open{display:flex}
+    .modal{background:var(--bg-card);border:1px solid var(--border-accent);border-radius:var(--radius-xl);padding:2.5rem;max-width:480px;width:100%;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 60px rgba(24,184,214,0.12)}
+    .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent)}
+    .modal-confetti{font-size:3rem;text-align:center;margin-bottom:1rem}
+    .modal-title{font-size:1.5rem;font-weight:800;letter-spacing:-0.5px;text-align:center;margin-bottom:.5rem}
+    .modal-sub{font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:2rem}
+    .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:2rem}
+    .modal-stat{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;text-align:center}
+    .modal-stat-val{font-size:1.6rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);letter-spacing:-1px}
+    .modal-stat-label{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+    .modal-accuracy-row{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center}
+    .modal-acc-label{font-size:13px;color:var(--text-sub)}
+    .modal-acc-val{font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--blue)}
+    .modal-buttons{display:flex;flex-direction:column;gap:.75rem}
+    .btn-full-primary{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue);color:#04090f;font-family:var(--font-body);font-weight:700;font-size:15px;padding:13px;border-radius:var(--radius);border:none;cursor:pointer;transition:all .25s;box-shadow:0 0 25px rgba(24,184,214,.3);text-decoration:none}
+    .btn-full-primary:hover{background:var(--blue-bright);box-shadow:0 0 40px rgba(24,184,214,.5)}
+    .btn-full-ghost{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:transparent;color:var(--text-sub);font-family:var(--font-body);font-weight:500;font-size:14px;padding:11px;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;transition:all .25s;text-decoration:none}
+    .btn-full-ghost:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    .dummy-banner{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-lg);padding:.75rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:10px;font-size:12px;color:#f59e0b;font-family:var(--font-mono);}
+    @media(max-width:900px){.tracker-grid{grid-template-columns:1fr}.controls-col{flex-direction:row;flex-wrap:wrap}.exercise-info-card,.timer-card,.reps-card,.accuracy-card{flex:1 1 280px;min-width:250px}}
+    @media(max-width:768px){.nav{padding:0 1.25rem}.inner{padding:0 1.25rem}.nav__session-info{display:none}}
+    @media(max-width:480px){.controls-col{flex-direction:column}.timer-display{font-size:2.8rem}.rep-count{font-size:3rem}}
+  </style>
+</head>
+<body>
+  <div class="bg-orb"></div>
+
+  <nav class="nav">
+    <a href="{{ url_for('main.index') }}" class="nav__brand">
+      <span class="nav__logo-mark">M</span>
+      <span class="nav__logo-text">MotionMate</span>
+    </a>
+    <div class="nav__session-info">
+      <span class="live-dot"></span>
+      <span>Sesi aktif — {{ exercise.name if exercise is mapping else exercise.name }}</span>
+    </div>
+    <a href="{{ url_for('sessions.history') }}" style="color:var(--text-muted);text-decoration:none;font-size:13px;font-family:var(--font-mono);">History →</a>
+  </nav>
+
+  <div class="page">
+    <div class="inner">
+      {% if dummy_mode %}
+      <div class="dummy-banner">🎭 <strong>Dummy Mode</strong> — Sesi ini tidak akan tersimpan ke database.</div>
+      {% endif %}
+
+      {% if exercise is mapping %}
+        {% set ex_name = exercise.name %}
+        {% set ex_cat = exercise.category %}
+        {% set ex_sets = exercise.target_sets %}
+        {% set ex_reps = exercise.target_reps %}
+        {% set ex_dur = exercise.duration_seconds %}
+        {% set ex_id = exercise.id %}
+      {% else %}
+        {% set ex_name = exercise.name %}
+        {% set ex_cat = exercise.category %}
+        {% set ex_sets = exercise.target_sets %}
+        {% set ex_reps = exercise.target_reps %}
+        {% set ex_dur = exercise.duration_seconds %}
+        {% set ex_id = exercise.id %}
+      {% endif %}
+
+      <div class="tracker-grid">
+
+        <!-- Camera / pose detection area -->
+        <div>
+          <div class="camera-card">
+            <div class="camera-area" id="cameraArea">
+              <canvas id="poseCanvas"></canvas>
+              <div class="camera-overlay-top">
+                <div class="accuracy-pill">
+                  <span class="live-dot" style="width:6px;height:6px;background:var(--warning);box-shadow:0 0 6px var(--warning)"></span>
+                  Pose AI: Coming Soon
+                </div>
+                <div id="timerDisplay2" style="font-size:14px;font-family:var(--font-mono);color:var(--white-dim);background:rgba(8,17,28,.7);padding:4px 12px;border-radius:6px">00:00</div>
+              </div>
+              <div class="camera-placeholder-inner">
+                <div class="camera-big-icon">◎</div>
+                <div class="camera-status-badge">⚠ Pose Detection — In Development</div>
+                <div class="camera-desc">Deteksi pose berbasis kamera akan tersedia segera. Gunakan tracker manual di sebelah kanan untuk mencatat reps Anda.</div>
+              </div>
+              <div class="camera-overlay-bot">
+                <div class="form-feedback" id="formFeedback">Tracker siap — mulai latihan!</div>
+                <div id="repFlash" style="font-size:2rem;opacity:0;transition:opacity .2s">✓</div>
+              </div>
+            </div>
+            <div class="camera-card-footer">
+              <span style="font-size:12px;font-family:var(--font-mono);color:var(--text-muted);">Latihan: <strong style="color:var(--white)">{{ ex_name }}</strong></span>
+              <div style="display:flex;gap:8px">
+                <button class="cam-btn" onclick="openFinishModal()">Selesaikan Sesi</button>
+                <a href="{{ url_for('exercises.index') }}" class="cam-btn cam-btn--danger" onclick="return confirm('Batalkan sesi ini?')">✕ Batal</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls column -->
+        <div class="controls-col">
+
+          <!-- Exercise info -->
+          <div class="exercise-info-card">
+            <div class="ex-info-header">
+              <div class="ex-info-icon">◎</div>
+              <div>
+                <div class="ex-info-cat">{{ ex_cat }}</div>
+                <div class="ex-info-name">{{ ex_name }}</div>
+              </div>
+            </div>
+            <div class="ex-info-body">
+              <div class="ex-spec-row">
+                <div class="ex-spec"><div class="ex-spec-val">{{ ex_sets }}</div><div class="ex-spec-label">Sets</div></div>
+                <div class="ex-spec"><div class="ex-spec-val">{{ ex_reps }}</div><div class="ex-spec-label">Reps</div></div>
+                <div class="ex-spec"><div class="ex-spec-val">{{ ex_dur }}s</div><div class="ex-spec-label">Durasi</div></div>
+              </div>
+              <div id="overallProg">
+                <div class="ex-progress-bar-wrap"><div class="ex-progress-bar" id="overallBar" style="width:0%"></div></div>
+                <div class="ex-progress-foot"><span id="overallLabel">Set 1 dari {{ ex_sets }}</span><span style="color:var(--blue)" id="overallPct">0%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timer -->
+          <div class="timer-card">
+            <div class="timer-label">Stopwatch</div>
+            <div class="timer-display" id="timerDisplay">00:00</div>
+            <div class="timer-btn-row">
+              <button class="timer-btn timer-btn-start" id="timerStartBtn" onclick="timerToggle()">▶ Mulai</button>
+              <button class="timer-btn timer-btn-reset" onclick="timerReset()">↺ Reset</button>
+            </div>
+          </div>
+
+          <!-- Rep counter -->
+          <div class="reps-card">
+            <div class="reps-header">
+              <div class="reps-title">Rep Counter</div>
+              <div class="set-badges" id="setBadges">
+                {% for i in range(ex_sets) %}
+                <div class="set-badge {% if i==0 %}active{% endif %}" id="setbadge{{ i }}" onclick="jumpToSet({{ i }})">{{ i+1 }}</div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="reps-counter">
+              <button class="rep-dec" onclick="decrementRep()">−</button>
+              <div class="rep-count" id="repCount">0</div>
+              <button class="rep-inc" onclick="incrementRep()">+</button>
+            </div>
+            <div class="rep-target">Rep <span id="currentRep">0</span> dari <span>{{ ex_reps }}</span></div>
+            <div class="rep-pip-row" id="pipRow">
+              {% for i in range(ex_reps) %}
+              <div class="rep-pip" id="pip{{ i }}"></div>
+              {% endfor %}
+            </div>
+            <button class="next-set-btn" id="nextSetBtn" onclick="nextSet()" disabled>Set Selesai — Lanjut Set Berikutnya →</button>
+            <div class="finish-btn-wrap">
+              <button class="finish-btn" onclick="openFinishModal()">🏁 Selesaikan &amp; Simpan Sesi</button>
+            </div>
+          </div>
+
+          <!-- Manual accuracy -->
+          <div class="accuracy-card">
+            <div class="accuracy-title">Perkiraan Akurasi (Manual)</div>
+            <div class="accuracy-display">
+              <div class="accuracy-ring">
+                <svg width="70" height="70" viewBox="0 0 70 70"><circle class="ring-track-s" cx="35" cy="35" r="28"/><circle class="ring-fill-s" cx="35" cy="35" r="28" id="accRingFill" style="stroke-dashoffset:79"/></svg>
+                <div class="acc-val" id="accValDisplay">55%</div>
+              </div>
+              <div class="acc-note">Seberapa nyaman gerakan Anda? Ini akan digunakan sebagai skor akurasi sesi ini. Pose AI akan mengotomatisasi ini segera.</div>
+            </div>
+            <input type="range" class="accuracy-slider" id="accuracySlider" min="0" max="100" value="55" oninput="updateAccuracy(this.value)"/>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finish Modal -->
+  <div class="modal-backdrop" id="finishModal">
+    <div class="modal">
+      <div class="modal-confetti" id="modalConfetti">🎉</div>
+      <div class="modal-title">Sesi Selesai!</div>
+      <div class="modal-sub" id="modalSub">Kerja bagus — Anda telah menyelesaikan {{ ex_name }}.</div>
+      <div class="modal-stats">
+        <div class="modal-stat"><div class="modal-stat-val" id="modalReps">0</div><div class="modal-stat-label">Total Reps</div></div>
+        <div class="modal-stat"><div class="modal-stat-val" id="modalSets">0</div><div class="modal-stat-label">Sets Done</div></div>
+        <div class="modal-stat"><div class="modal-stat-val" id="modalTime">00:00</div><div class="modal-stat-label">Waktu</div></div>
+      </div>
+      <div class="modal-accuracy-row">
+        <span class="modal-acc-label">Skor Akurasi Postur</span>
+        <span class="modal-acc-val" id="modalAcc">—</span>
+      </div>
+      <div class="modal-buttons">
+        <form method="POST" action="{{ url_for('sessions.complete', session_id=rehab_session_id) }}" id="finishForm">
+          <input type="hidden" name="reps_completed" id="hiddenReps" value="0"/>
+          <input type="hidden" name="sets_completed" id="hiddenSets" value="0"/>
+          <input type="hidden" name="duration_seconds" id="hiddenDuration" value="0"/>
+          <input type="hidden" name="accuracy_score" id="hiddenAccuracy" value="55"/>
+          <button type="submit" class="btn-full-primary">💾 Simpan &amp; Selesai</button>
+        </form>
+        <button class="btn-full-ghost" onclick="closeFinishModal()">Lanjut Latihan</button>
+        <a href="{{ url_for('sessions.history') }}" class="btn-full-ghost">Lihat History</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── State ───────────────────────────────────────────────────────
+    const TARGET_SETS = {{ ex_sets }};
+    const TARGET_REPS = {{ ex_reps }};
+    const TARGET_DUR  = {{ ex_dur }};
+    let currentSet  = 0;     // 0-indexed
+    let currentReps = 0;
+    let completedSets = 0;
+    let totalReps = 0;
+    let timerSec = 0;
+    let timerRunning = false;
+    let timerInterval = null;
+    let accuracy = 55;
+
+    // ─── Timer ───────────────────────────────────────────────────────
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function timerTick(){
+      timerSec++;
+      const m = Math.floor(timerSec/60), s = timerSec%60;
+      const val = pad(m)+':'+pad(s);
+      document.getElementById('timerDisplay').textContent  = val;
+      document.getElementById('timerDisplay2').textContent = val;
+    }
+    function timerToggle(){
+      if(timerRunning){
+        clearInterval(timerInterval); timerRunning=false;
+        document.getElementById('timerDisplay').className='timer-display paused';
+        document.getElementById('timerStartBtn').textContent='▶ Lanjut';
+      } else {
+        timerInterval=setInterval(timerTick,1000); timerRunning=true;
+        document.getElementById('timerDisplay').className='timer-display running';
+        document.getElementById('timerStartBtn').textContent='⏸ Pause';
+      }
+    }
+    function timerReset(){
+      clearInterval(timerInterval); timerRunning=false; timerSec=0;
+      document.getElementById('timerDisplay').textContent='00:00';
+      document.getElementById('timerDisplay2').textContent='00:00';
+      document.getElementById('timerDisplay').className='timer-display';
+      document.getElementById('timerStartBtn').textContent='▶ Mulai';
+    }
+
+    // ─── Rep counter ─────────────────────────────────────────────────
+    function updatePips(){
+      for(let i=0;i<TARGET_REPS;i++){
+        const pip=document.getElementById('pip'+i);
+        if(!pip) continue;
+        pip.className='rep-pip'+(i<currentReps?' done':i===currentReps?' current':'');
+      }
+      document.getElementById('repCount').textContent=currentReps;
+      document.getElementById('currentRep').textContent=currentReps;
+      document.getElementById('nextSetBtn').disabled = currentReps < TARGET_REPS;
+      // Auto start timer on first rep
+      if(currentReps===1 && !timerRunning) timerToggle();
+      // Flash feedback
+      updateFeedback();
+    }
+    function incrementRep(){
+      if(currentReps >= TARGET_REPS) return;
+      currentReps++;
+      totalReps++;
+      flashRep();
+      updatePips();
+      updateOverall();
+    }
+    function decrementRep(){
+      if(currentReps <= 0) return;
+      currentReps--;
+      totalReps=Math.max(0,totalReps-1);
+      updatePips();
+      updateOverall();
+    }
+    function flashRep(){
+      const el=document.getElementById('repFlash');
+      el.style.opacity='1'; el.style.transform='scale(1.5)';
+      setTimeout(()=>{ el.style.opacity='0'; el.style.transform='scale(1)'; el.style.transition='all .3s'; },300);
+    }
+    function jumpToSet(idx){
+      if(idx <= completedSets){ /* re-visit completed set — view only */ }
+    }
+    function nextSet(){
+      if(currentReps < TARGET_REPS) return;
+      completedSets++;
+      updateSetBadges();
+      if(completedSets >= TARGET_SETS){ openFinishModal(); return; }
+      currentSet = completedSets;
+      currentReps = 0;
+      updatePips();
+      updateOverall();
+      updateFeedback();
+    }
+    function updateSetBadges(){
+      for(let i=0;i<TARGET_SETS;i++){
+        const b=document.getElementById('setbadge'+i);
+        if(!b) continue;
+        if(i < completedSets) b.className='set-badge done';
+        else if(i === completedSets) b.className='set-badge active';
+        else b.className='set-badge';
+      }
+    }
+    function updateOverall(){
+      const totalPossible = TARGET_SETS * TARGET_REPS;
+      const done = completedSets * TARGET_REPS + currentReps;
+      const pct = Math.round(done/totalPossible*100);
+      document.getElementById('overallBar').style.width=pct+'%';
+      document.getElementById('overallPct').textContent=pct+'%';
+      document.getElementById('overallLabel').textContent='Set '+(completedSets+1)+' dari '+TARGET_SETS;
+    }
+    function updateFeedback(){
+      const msgs=['Posisi awal stabil!','Lakukan gerakan perlahan.','Tahan 2–3 detik di puncak!','Napas teratur — hembuskan saat exertion.','Target reps hampir tercapai!'];
+      const idx=Math.min(Math.floor(currentReps/Math.max(TARGET_REPS/msgs.length,1)),msgs.length-1);
+      document.getElementById('formFeedback').textContent=msgs[idx];
+    }
+
+    // ─── Accuracy slider ─────────────────────────────────────────────
+    function updateAccuracy(val){
+      accuracy=parseInt(val);
+      document.getElementById('accValDisplay').textContent=accuracy+'%';
+      const dashoffset = 175 - (175 * accuracy / 100);
+      document.getElementById('accRingFill').style.strokeDashoffset=dashoffset;
+    }
+    updateAccuracy(55);
+
+    // ─── Finish modal ────────────────────────────────────────────────
+    function openFinishModal(){
+      if(timerRunning) timerToggle(); // pause timer
+      document.getElementById('modalReps').textContent = totalReps;
+      document.getElementById('modalSets').textContent = Math.max(completedSets, currentReps>0?1:0);
+      document.getElementById('modalTime').textContent = document.getElementById('timerDisplay').textContent;
+      document.getElementById('modalAcc').textContent = accuracy+'%';
+      // Update hidden fields
+      document.getElementById('hiddenReps').value = totalReps;
+      document.getElementById('hiddenSets').value = Math.max(completedSets, currentReps>0?1:0);
+      document.getElementById('hiddenDuration').value = timerSec;
+      document.getElementById('hiddenAccuracy').value = accuracy;
+      // Confetti based on performance
+      const acc=accuracy;
+      document.getElementById('modalConfetti').textContent = acc>=90?'🌟':acc>=75?'🎉':acc>=50?'💪':'🔄';
+      document.getElementById('finishModal').classList.add('open');
+    }
+    function closeFinishModal(){
+      document.getElementById('finishModal').classList.remove('open');
+      if(!timerRunning) timerToggle(); // resume timer
+    }
+    // Close modal on backdrop click
+    document.getElementById('finishModal').addEventListener('click', function(e){ if(e.target===this) closeFinishModal(); });
+
+    // ─── Init ────────────────────────────────────────────────────────
+    updatePips();
+    updateOverall();
+    updateSetBadges();
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e){
+      if(e.target.tagName==='INPUT') return;
+      if(e.code==='Space'){ e.preventDefault(); incrementRep(); }
+      if(e.code==='Backspace'){ e.preventDefault(); decrementRep(); }
+      if(e.code==='KeyT'){ timerToggle(); }
+      if(e.code==='KeyN'){ if(currentReps>=TARGET_REPS) nextSet(); }
+      if(e.code==='KeyF'){ openFinishModal(); }
+    });
+  </script>
+</body>
+</html>

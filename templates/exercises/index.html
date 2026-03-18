@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exercise Library — MotionMate</title>
+  <!-- MotionMate Icons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <!-- / Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#04090f;--bg-2:#070e17;--bg-3:#0b1520;--bg-card:#08111c;--border:rgba(24,184,214,0.08);--border-accent:rgba(24,184,214,0.35);--blue:#18B8D6;--blue-dim:rgba(24,184,214,0.10);--blue-glow:rgba(24,184,214,0.28);--blue-bright:#36d4ef;--blue-dark:#0d7a90;--white:#eef4f8;--text-muted:#4a6375;--text-sub:#7a97ab;--danger:#ff4f5e;--warning:#f59e0b;--radius:10px;--radius-lg:16px;--radius-xl:24px;--font-body:'Outfit',sans-serif;--font-mono:'JetBrains Mono',monospace;--nav-h:68px;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.3;pointer-events:none;z-index:0}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;background:rgba(4,9,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .nav__brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--white)}
+    .nav__logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#04090f;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:14px;border-radius:8px;box-shadow:0 0 18px var(--blue-glow)}
+    .nav__logo-text{font-weight:700;font-size:16px;letter-spacing:-0.3px}
+    .nav__links{display:flex;align-items:center;gap:4px}
+    .nav__link{color:var(--text-sub);text-decoration:none;font-size:14px;padding:7px 14px;border-radius:7px;transition:all .2s}
+    .nav__link:hover{color:var(--white);background:rgba(255,255,255,0.05)}
+    .nav__link--active{color:var(--blue)}
+    .nav__mobile-toggle{display:none;background:none;border:1px solid var(--border);color:var(--text-sub);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:18px;}
+    .mobile-nav{display:none;position:fixed;top:var(--nav-h);left:0;right:0;background:rgba(4,9,15,0.98);border-bottom:1px solid var(--border-accent);padding:1.5rem 2rem;flex-direction:column;gap:8px;z-index:99;backdrop-filter:blur(20px);}
+    .mobile-nav.open{display:flex;}
+    .mobile-nav a{color:var(--text-sub);text-decoration:none;font-size:15px;padding:10px 14px;border-radius:8px;transition:all .2s;}
+    .mobile-nav a:hover{color:var(--white);background:rgba(255,255,255,0.06);}
+    .page{padding-top:calc(var(--nav-h) + 2.5rem);padding-bottom:4rem;position:relative;z-index:2}
+    .inner{max-width:1200px;margin:0 auto;padding:0 2.5rem}
+    .page-header{margin-bottom:2rem}
+    .page-header-tag{font-size:11px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+    .page-header-title{font-size:2rem;font-weight:800;letter-spacing:-1px}
+    .page-header-sub{font-size:14px;color:var(--text-muted);margin-top:6px}
+    .search-bar{display:flex;gap:12px;margin-bottom:1.5rem;align-items:center}
+    .search-input-wrap{flex:1;position:relative}
+    .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:16px}
+    .search-input{width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px 11px 42px;font-family:var(--font-body);font-size:14px;color:var(--white);outline:none;transition:all .2s}
+    .search-input:focus{border-color:var(--border-accent);box-shadow:0 0 0 3px rgba(24,184,214,.10)}
+    .search-input::placeholder{color:var(--text-muted)}
+    .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2rem}
+    .filter-btn{font-size:12px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;padding:7px 16px;border-radius:20px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);cursor:pointer;text-decoration:none;transition:all .2s}
+    .filter-btn:hover,.filter-btn--active{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    .count-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+    .count-text{font-size:13px;color:var(--text-muted);font-family:var(--font-mono)}
+    .count-text span{color:var(--blue);font-weight:700}
+    .exercises-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.25rem}
+    .exercise-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;text-decoration:none;color:var(--white);display:flex;flex-direction:column;transition:all .3s;position:relative}
+    .exercise-card:hover{border-color:var(--border-accent);transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,0,0,0.4),0 0 30px rgba(24,184,214,0.08)}
+    .ex-thumb{height:160px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;background:linear-gradient(135deg,var(--bg-3),var(--bg-2))}
+    .ex-thumb img{width:100%;height:100%;object-fit:cover;filter:saturate(0.5) brightness(0.6);transition:filter .3s}
+    .exercise-card:hover .ex-thumb img{filter:saturate(0.7) brightness(0.75)}
+    .ex-thumb-placeholder{font-size:4rem;color:var(--blue-dark);opacity:.6}
+    .ex-thumb-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,17,28,0.8),transparent)}
+    .ex-difficulty{position:absolute;top:12px;right:12px;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:20px}
+    .diff--beginner{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+    .diff--intermediate{background:rgba(245,158,11,.15);color:var(--warning);border:1px solid rgba(245,158,11,.3)}
+    .diff--advanced{background:rgba(255,79,94,.15);color:var(--danger);border:1px solid rgba(255,79,94,.3)}
+    .ex-body{padding:1.25rem;flex:1;display:flex;flex-direction:column}
+    .ex-category{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;color:var(--blue);margin-bottom:6px}
+    .ex-title{font-size:15px;font-weight:700;margin-bottom:6px;letter-spacing:-0.3px}
+    .ex-desc{font-size:12px;color:var(--text-muted);line-height:1.6;flex:1;margin-bottom:1rem}
+    .ex-meta{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+    .ex-meta-item{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-mono);color:var(--text-sub)}
+    .ex-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue-dim);border:1px solid var(--border-accent);color:var(--blue);font-size:13px;font-weight:600;padding:9px;border-radius:var(--radius);text-decoration:none;transition:all .25s}
+    .ex-btn:hover{background:var(--blue);color:#04090f;box-shadow:0 0 20px rgba(24,184,214,.3)}
+    .dummy-banner{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-lg);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:12px;font-size:13px;color:#f59e0b;font-family:var(--font-mono);}
+    .flash-wrap{position:fixed;top:calc(var(--nav-h)+14px);left:50%;transform:translateX(-50%);z-index:300;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:8px;width:90%}
+    .flash{padding:12px 18px;border-radius:var(--radius);font-size:14px;border:1px solid transparent;animation:slideDown .25s ease}
+    .flash--success{background:rgba(24,184,214,.12);border-color:rgba(24,184,214,.3);color:var(--blue)}
+    .flash--danger{background:rgba(255,79,94,.12);border-color:rgba(255,79,94,.3);color:#ff4f5e}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:768px){.nav{padding:0 1.25rem}.nav__links{display:none}.nav__mobile-toggle{display:block}.inner{padding:0 1.25rem}.exercises-grid{grid-template-columns:1fr}}
+    @media(max-width:480px){.exercises-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  {% set active_page = 'exercises' %}
+  {% include 'partials/nav.html' %}
+
+  <div class="flash-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}
+        <div class="flash flash--{{ category }}">{{ message }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="page">
+    <div class="inner">
+      <div class="page-header">
+        <div class="page-header-tag">Exercise Library</div>
+        <h1 class="page-header-title">Pilih sesi latihan Anda</h1>
+        <div class="page-header-sub">Latihan terverifikasi fisioterapis, diorganisir per kategori pemulihan.</div>
+      </div>
+
+      {% if dummy_mode %}
+      <div class="dummy-banner">🎭 <strong>Dummy Data Mode</strong> — Ini adalah contoh library latihan.</div>
+      {% endif %}
+
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" placeholder="Cari latihan... (Knee Extension, Shoulder, dll)" id="searchInput" oninput="filterCards()"/>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        {% for cat in categories %}
+        <a href="#" class="filter-btn {% if cat == active_category %}filter-btn--active{% endif %}" onclick="setFilter('{{ cat }}',this);return false">{{ cat }}</a>
+        {% endfor %}
+      </div>
+
+      <div class="count-bar">
+        <div class="count-text">Menampilkan <span id="countNum">12</span> latihan</div>
+      </div>
+
+      <!-- Exercise grid — always shows dummy cards (real DB exercises are an extension) -->
+      <div class="exercises-grid" id="exGrid">
+        {% if dummy_mode or not exercises %}
+        {# Dummy exercise cards shown in demo mode OR when DB is empty #}
+        {% set dummy_exercises = [
+          (1,'orthopedic','Knee Extension','Luruskan lutut sepenuhnya dari posisi duduk. Efektif untuk memperkuat otot quadriceps pasca operasi.','beginner','3 sets','10 reps','30s','◎'),
+          (2,'sports','Shoulder Rotation','Rotasi bahu dalam rentang gerak penuh untuk memulihkan fleksibilitas dan kekuatan rotator cuff.','intermediate','2 sets','15 reps','45s','▲'),
+          (3,'stroke','Finger Flexion','Melenturkan dan meluruskan jari-jari untuk memulihkan kontrol motorik halus pasca stroke.','beginner','3 sets','20 reps','60s','◈'),
+          (4,'elderly','Standing Balance','Latihan keseimbangan berdiri satu kaki untuk mencegah jatuh pada lansia.','beginner','2 sets','30s hold','60s','◑'),
+          (5,'cardiac','Seated March','Gerakan berjalan di tempat sambil duduk untuk latihan kardiovaskular ringan.','beginner','3 sets','30 steps','120s','⊕'),
+          (6,'orthopedic','Hip Abduction','Mengangkat kaki ke samping untuk memperkuat otot abductor hip.','intermediate','3 sets','12 reps','45s','◎'),
+          (7,'sports','Single Leg Squat','Squat satu kaki untuk melatih keseimbangan, kekuatan, dan proprioception.','advanced','3 sets','8 reps','60s','▲'),
+          (8,'stroke','Wrist Flexion & Extension','Latihan pergelangan tangan untuk memulihkan range of motion pasca stroke.','beginner','3 sets','15 reps','30s','◈'),
+          (9,'elderly','Ankle Circles','Rotasi pergelangan kaki untuk meningkatkan sirkulasi dan fleksibilitas.','beginner','2 sets','20 reps','30s','⊕'),
+          (10,'cardiac','Breathing Exercise','Latihan pernapasan diafragma untuk memperkuat otot pernapasan.','intermediate','5 sets','10 breath','180s','♡'),
+          (11,'orthopedic','Straight Leg Raise','Mengangkat kaki lurus dari posisi berbaring untuk memperkuat quadriceps.','beginner','3 sets','15 reps','45s','◎'),
+          (12,'sports','Calf Raises','Berdiri jinjit untuk memperkuat otot betis dan Achilles.','intermediate','3 sets','20 reps','30s','▲'),
+        ] %}
+        {% for ex_id, cat, name, desc, diff, sets, reps, dur, icon in dummy_exercises %}
+        <a href="{{ url_for('exercises.detail', exercise_id=ex_id) }}" class="exercise-card" data-cat="{{ cat }}">
+          <div class="ex-thumb">
+            <div class="ex-thumb-placeholder">{{ icon }}</div>
+            <span class="ex-difficulty diff--{{ diff }}">{{ diff }}</span>
+          </div>
+          <div class="ex-body">
+            <div class="ex-category">{{ cat }}</div>
+            <div class="ex-title">{{ name }}</div>
+            <div class="ex-desc">{{ desc }}</div>
+            <div class="ex-meta">
+              <span class="ex-meta-item">🔄 {{ sets }}</span>
+              <span class="ex-meta-item">💪 {{ reps }}</span>
+              <span class="ex-meta-item">⏱ {{ dur }}</span>
+            </div>
+            <div class="ex-btn">Mulai Sesi →</div>
+          </div>
+        </a>
+        {% endfor %}
+        {% else %}
+        {# Real DB exercises #}
+        {% set icons = {'stroke':'◈','sports':'▲','orthopedic':'◎','elderly':'◑','cardiac':'⊕'} %}
+        {% for ex in exercises %}
+        <a href="{{ url_for('exercises.detail', exercise_id=ex.id) }}" class="exercise-card" data-cat="{{ ex.category }}">
+          <div class="ex-thumb">
+            <div class="ex-thumb-placeholder">{{ icons.get(ex.category, '▦') }}</div>
+            <span class="ex-difficulty diff--{{ ex.difficulty }}">{{ ex.difficulty }}</span>
+          </div>
+          <div class="ex-body">
+            <div class="ex-category">{{ ex.category }}</div>
+            <div class="ex-title">{{ ex.name }}</div>
+            <div class="ex-desc">{{ ex.description[:90] if ex.description else '' }}{% if ex.description and ex.description|length > 90 %}…{% endif %}</div>
+            <div class="ex-meta">
+              <span class="ex-meta-item">🔄 {{ ex.target_sets }} sets</span>
+              <span class="ex-meta-item">💪 {{ ex.target_reps }} reps</span>
+              <span class="ex-meta-item">⏱ {{ ex.duration_seconds }}s</span>
+            </div>
+            <div class="ex-btn">Mulai Sesi →</div>
+          </div>
+        </a>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mobileToggle = document.getElementById('mobileToggle');
+    const mobileNav = document.getElementById('mobileNav');
+    if(mobileToggle) { mobileToggle.addEventListener('click', () => { mobileNav.classList.toggle('open'); mobileToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰'; }); }
+
+    let activeFilter = '{{ active_category }}';
+    function setFilter(cat, el) {
+      activeFilter = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
+      el.classList.add('filter-btn--active');
+      filterCards();
+    }
+    function filterCards() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const cards = document.querySelectorAll('.exercise-card');
+      let count = 0;
+      cards.forEach(c => {
+        const matchCat = activeFilter === 'all' || c.dataset.cat === activeFilter;
+        const matchQ = !q || c.innerText.toLowerCase().includes(q);
+        const show = matchCat && matchQ;
+        c.style.display = show ? '' : 'none';
+        if(show) count++;
+      });
+      document.getElementById('countNum').textContent = count;
+    }
+    filterCards();
+    document.querySelectorAll('.flash').forEach(el=>{ setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity 0.4s ease'; setTimeout(()=>el.remove(),400); },4000); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{# Shared nav snippet — include in inner pages with:
+   {% set _nav_authenticated = true %}
+   {% set _nav_dummy = dummy_mode %}
+   {% include 'partials/nav.html' %}
+#}
+<nav class="nav" id="mainNav">
+  <a href="{{ url_for('main.index') }}" class="nav__brand">
+    <span class="nav__logo-mark">M</span>
+    <span class="nav__logo-text">MotionMate</span>
+  </a>
+  <div class="nav__links">
+    <a href="{{ url_for('dashboard.index') }}" class="nav__link {% if active_page == 'dashboard' %}nav__link--active{% endif %}">Dashboard</a>
+    <a href="{{ url_for('exercises.index') }}" class="nav__link {% if active_page == 'exercises' %}nav__link--active{% endif %}">Exercises</a>
+    <a href="{{ url_for('sessions.history') }}" class="nav__link {% if active_page == 'history' %}nav__link--active{% endif %}">History</a>
+    {% if dummy_mode %}
+      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-size:11px;font-family:var(--font-mono);padding:4px 10px;border-radius:20px;letter-spacing:.5px;">🎭 Dummy Mode</span>
+      <a href="{{ url_for('main.disable_dummy') }}" class="nav__link" style="color:var(--text-muted)">Exit Demo</a>
+    {% else %}
+      <a href="{{ url_for('auth.logout') }}" class="nav__link" style="color:var(--text-muted)">Logout</a>
+    {% endif %}
+  </div>
+  <button class="nav__mobile-toggle" id="mobileToggle" aria-label="Menu">☰</button>
+</nav>
+<div class="mobile-nav" id="mobileNav">
+  <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+  <a href="{{ url_for('exercises.index') }}">Exercises</a>
+  <a href="{{ url_for('sessions.history') }}">History</a>
+  {% if dummy_mode %}
+    <a href="{{ url_for('main.disable_dummy') }}" style="color:#f59e0b;">🎭 Exit Dummy Mode</a>
+  {% else %}
+    <a href="{{ url_for('auth.logout') }}" style="color:var(--text-muted)">Logout</a>
+  {% endif %}
+</div>

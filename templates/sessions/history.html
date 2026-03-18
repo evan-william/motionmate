@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riwayat Sesi — MotionMate</title>
+  <!-- MotionMate Icons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <!-- / Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#04090f;--bg-2:#070e17;--bg-3:#0b1520;--bg-card:#08111c;--border:rgba(24,184,214,0.08);--border-accent:rgba(24,184,214,0.35);--blue:#18B8D6;--blue-dim:rgba(24,184,214,0.10);--blue-glow:rgba(24,184,214,0.28);--blue-bright:#36d4ef;--blue-dark:#0d7a90;--white:#eef4f8;--text-muted:#4a6375;--text-sub:#7a97ab;--danger:#ff4f5e;--warning:#f59e0b;--success:#22c55e;--radius:10px;--radius-lg:16px;--radius-xl:24px;--font-body:'Outfit',sans-serif;--font-mono:'JetBrains Mono',monospace;--nav-h:68px;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.3;pointer-events:none;z-index:0}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;background:rgba(4,9,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .nav__brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--white)}
+    .nav__logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#04090f;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:14px;border-radius:8px;box-shadow:0 0 18px var(--blue-glow)}
+    .nav__logo-text{font-weight:700;font-size:16px;letter-spacing:-0.3px}
+    .nav__links{display:flex;align-items:center;gap:4px}
+    .nav__link{color:var(--text-sub);text-decoration:none;font-size:14px;padding:7px 14px;border-radius:7px;transition:all .2s}
+    .nav__link:hover{color:var(--white);background:rgba(255,255,255,0.05)}
+    .nav__link--active{color:var(--blue)}
+    .nav__mobile-toggle{display:none;background:none;border:1px solid var(--border);color:var(--text-sub);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:18px;}
+    .mobile-nav{display:none;position:fixed;top:var(--nav-h);left:0;right:0;background:rgba(4,9,15,0.98);border-bottom:1px solid var(--border-accent);padding:1.5rem 2rem;flex-direction:column;gap:8px;z-index:99;backdrop-filter:blur(20px);}
+    .mobile-nav.open{display:flex;}
+    .mobile-nav a{color:var(--text-sub);text-decoration:none;font-size:15px;padding:10px 14px;border-radius:8px;transition:all .2s;}
+    .page{padding-top:calc(var(--nav-h) + 2.5rem);padding-bottom:4rem;position:relative;z-index:2}
+    .inner{max-width:960px;margin:0 auto;padding:0 2.5rem}
+    .page-header{margin-bottom:2.5rem;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem}
+    .page-header-tag{font-size:11px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+    .page-header-title{font-size:2rem;font-weight:800;letter-spacing:-1px}
+    .page-header-sub{font-size:14px;color:var(--text-muted);margin-top:6px}
+    .btn-sm{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#04090f;font-family:var(--font-body);font-weight:700;font-size:13px;padding:9px 18px;border-radius:var(--radius);text-decoration:none;border:none;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(24,184,214,.3)}
+    .btn-sm:hover{background:var(--blue-bright)}
+    .summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+    .summary-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden;transition:all .3s}
+    .summary-box:hover{border-color:var(--border-accent)}
+    .summary-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),transparent)}
+    .summary-label{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+    .summary-val{font-size:1.8rem;font-weight:800;font-family:var(--font-mono);color:var(--white);letter-spacing:-1px}
+    .summary-sub{font-size:11px;color:var(--blue);font-family:var(--font-mono);margin-top:4px}
+    .filter-row{display:flex;gap:8px;margin-bottom:1.5rem;align-items:center;flex-wrap:wrap}
+    .filter-tag{font-size:12px;font-family:var(--font-mono);padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-muted);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
+    .filter-tag:hover,.filter-tag.active{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    .sessions-list{display:flex;flex-direction:column;gap:8px}
+    .session-row{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);transition:all .3s;position:relative;overflow:hidden;cursor:default}
+    .session-row:hover{border-color:var(--border-accent);transform:translateX(4px)}
+    .session-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);transform:scaleY(0);transition:transform .25s;transform-origin:bottom}
+    .session-row:hover::before{transform:scaleY(1)}
+    .session-icon{width:42px;height:42px;background:var(--blue-dim);border:1px solid var(--border-accent);border-radius:10px;display:grid;place-items:center;color:var(--blue);flex-shrink:0;font-size:18px}
+    .session-main{flex:1;min-width:0}
+    .session-name{font-size:14px;font-weight:700;color:var(--white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .session-meta{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);display:flex;flex-wrap:wrap;gap:8px}
+    .session-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+    .session-score{font-size:18px;font-weight:800;font-family:var(--font-mono);color:var(--blue);letter-spacing:-0.5px}
+    .badge{display:inline-flex;align-items:center;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;padding:3px 8px;border-radius:4px}
+    .badge--success{background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.25)}
+    .badge--warning{background:rgba(245,158,11,.1);color:var(--warning);border:1px solid rgba(245,158,11,.25)}
+    .badge--muted{background:rgba(255,255,255,.05);color:var(--text-muted);border:1px solid var(--border)}
+    .date-sep{display:flex;align-items:center;gap:12px;margin:1.5rem 0 .75rem}
+    .date-sep-line{flex:1;height:1px;background:var(--border)}
+    .date-sep-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+    .pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2.5rem;flex-wrap:wrap}
+    .page-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius);font-size:13px;font-family:var(--font-mono);text-decoration:none;border:1px solid var(--border);color:var(--text-sub);background:var(--bg-card);transition:all .2s;cursor:pointer}
+    .page-btn:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    .page-btn.current{background:var(--blue-dim);border-color:var(--border-accent);color:var(--blue)}
+    .page-info{font-size:12px;font-family:var(--font-mono);color:var(--text-muted);padding:0 8px}
+    .dummy-banner{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-lg);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:12px;font-size:13px;color:#f59e0b;font-family:var(--font-mono);}
+    .empty-state{text-align:center;padding:4rem 2rem;color:var(--text-muted)}
+    .empty-icon{font-size:3rem;opacity:.3;margin-bottom:1rem}
+    .flash-wrap{position:fixed;top:calc(var(--nav-h)+14px);left:50%;transform:translateX(-50%);z-index:300;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:8px;width:90%}
+    .flash{padding:12px 18px;border-radius:var(--radius);font-size:14px;border:1px solid transparent;animation:slideDown .25s ease}
+    .flash--success{background:rgba(24,184,214,.12);border-color:rgba(24,184,214,.3);color:var(--blue)}
+    .flash--danger{background:rgba(255,79,94,.12);border-color:rgba(255,79,94,.3);color:#ff4f5e}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:900px){.summary-row{grid-template-columns:1fr 1fr}.inner{padding:0 1.25rem}.page-header{flex-direction:column;align-items:flex-start}}
+    @media(max-width:768px){.nav{padding:0 1.25rem}.nav__links{display:none}.nav__mobile-toggle{display:block}.session-row{padding:12px 14px}}
+    @media(max-width:480px){.summary-row{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  {% set active_page = 'history' %}
+  {% include 'partials/nav.html' %}
+
+  <div class="flash-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}
+        <div class="flash flash--{{ category }}">{{ message }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="page">
+    <div class="inner">
+      <div class="page-header">
+        <div>
+          <div class="page-header-tag">Recovery Log</div>
+          <h1 class="page-header-title">Riwayat Sesi</h1>
+          <div class="page-header-sub">{% if dummy_mode %}24 sesi tercatat (contoh data){% elif pagination and pagination.total %}{{ pagination.total }} sesi tercatat{% else %}Belum ada sesi{% endif %}</div>
+        </div>
+        <a href="{{ url_for('exercises.index') }}" class="btn-sm">+ Sesi Baru</a>
+      </div>
+
+      {% if dummy_mode %}
+      <div class="dummy-banner">🎭 <strong>Dummy Data Mode</strong> — Riwayat di bawah adalah contoh data.</div>
+      {% endif %}
+
+      <!-- Summary -->
+      {% if dummy_mode %}
+      <div class="summary-row">
+        <div class="summary-box"><div class="summary-label">Total Sesi</div><div class="summary-val">24</div><div class="summary-sub">all time</div></div>
+        <div class="summary-box"><div class="summary-label">Avg Akurasi</div><div class="summary-val">87%</div><div class="summary-sub">postur score</div></div>
+        <div class="summary-box"><div class="summary-label">Total Reps</div><div class="summary-val">480</div><div class="summary-sub">kumulatif</div></div>
+        <div class="summary-box"><div class="summary-label">Total Waktu</div><div class="summary-val">6.4h</div><div class="summary-sub">latihan</div></div>
+      </div>
+      {% elif pagination and pagination.total %}
+      <div class="summary-row">
+        <div class="summary-box"><div class="summary-label">Total Sesi</div><div class="summary-val">{{ pagination.total }}</div><div class="summary-sub">all time</div></div>
+        <div class="summary-box"><div class="summary-label">Completed</div><div class="summary-val">{{ pagination.items|selectattr('status','equalto','completed')|list|length }}</div><div class="summary-sub">this page</div></div>
+        <div class="summary-box"><div class="summary-label">Total Reps</div><div class="summary-val">{{ pagination.items|sum(attribute='reps_completed') }}</div><div class="summary-sub">this page</div></div>
+        <div class="summary-box"><div class="summary-label">Pages</div><div class="summary-val">{{ pagination.pages }}</div><div class="summary-sub">total pages</div></div>
+      </div>
+      {% endif %}
+
+      <!-- Filter row -->
+      <div class="filter-row">
+        <span class="filter-tag active" onclick="filterSessions('all',this)">Semua</span>
+        <span class="filter-tag" onclick="filterSessions('completed',this)">Selesai</span>
+        <span class="filter-tag" onclick="filterSessions('in_progress',this)">Berlangsung</span>
+      </div>
+
+      <!-- Sessions list -->
+      {% if dummy_mode %}
+      <div class="sessions-list" id="sessionsList">
+        {% set dummy_sessions = [
+          ('17 Maret 2026','◎','Knee Extension','17 Mar 2026, 09:15','10 reps','3 sets','120s','92%','completed'),
+          ('17 Maret 2026','▲','Shoulder Rotation','17 Mar 2026, 14:30','15 reps','2 sets','90s','84%','completed'),
+          ('16 Maret 2026','◈','Hip Abduction','16 Mar 2026, 08:45','8 reps','2 sets','75s','78%','in_progress'),
+          ('15 Maret 2026','⊕','Ankle Circles','15 Mar 2026, 10:00','20 reps','3 sets','60s','95%','completed'),
+          ('15 Maret 2026','◑','Wrist Flexion & Extension','15 Mar 2026, 15:20','12 reps','3 sets','80s','88%','completed'),
+          ('14 Maret 2026','◎','Straight Leg Raise','14 Mar 2026, 08:30','15 reps','3 sets','90s','91%','completed'),
+          ('14 Maret 2026','▲','Calf Raises','14 Mar 2026, 16:00','20 reps','3 sets','45s','86%','completed'),
+        ] %}
+        {% set last_date = '' %}
+        {% for date_label, icon, name, time, reps, sets, dur, score, status in dummy_sessions %}
+        {% if date_label != last_date %}
+        <div class="date-sep"><div class="date-sep-line"></div><span class="date-sep-label">{{ date_label }}</span><div class="date-sep-line"></div></div>
+        {% set last_date = date_label %}
+        {% endif %}
+        <div class="session-row" data-status="{{ status }}">
+          <div class="session-icon">{{ icon }}</div>
+          <div class="session-main">
+            <div class="session-name">{{ name }}</div>
+            <div class="session-meta"><span>{{ time }}</span><span>{{ reps }}</span><span>{{ sets }}</span><span>{{ dur }}</span></div>
+          </div>
+          <div class="session-right">
+            <span class="session-score">{{ score }}</span>
+            <span class="badge badge--{% if status=='completed' %}success{% elif status=='in_progress' %}warning{% else %}muted{% endif %}">{{ 'Selesai' if status=='completed' else 'Berlangsung' if status=='in_progress' else status }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif pagination and pagination.items %}
+      <div class="sessions-list" id="sessionsList">
+        {% set ns = namespace(last_date='') %}
+        {% for s in pagination.items %}
+        {% set date_str = s.started_at.strftime('%d %B %Y') %}
+        {% if date_str != ns.last_date %}
+        <div class="date-sep"><div class="date-sep-line"></div><span class="date-sep-label">{{ date_str }}</span><div class="date-sep-line"></div></div>
+        {% set ns.last_date = date_str %}
+        {% endif %}
+        <div class="session-row" data-status="{{ s.status }}">
+          <div class="session-icon">◎</div>
+          <div class="session-main">
+            <div class="session-name">{{ s.exercise.name if s.exercise else 'Exercise' }}</div>
+            <div class="session-meta">
+              <span>{{ s.started_at.strftime('%d %b %Y, %H:%M') }}</span>
+              <span>{{ s.reps_completed }} reps</span>
+              <span>{{ s.sets_completed }} sets</span>
+              <span>{{ s.duration_seconds }}s</span>
+            </div>
+          </div>
+          <div class="session-right">
+            <span class="session-score">{{ s.accuracy_score|round(1) }}%</span>
+            <span class="badge badge--{% if s.status=='completed' %}success{% elif s.status=='in_progress' %}warning{% else %}muted{% endif %}">{{ s.status }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if pagination.pages > 1 %}
+      <div class="pagination">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('sessions.history', page=pagination.prev_num) }}" class="page-btn">← Prev</a>
+        {% endif %}
+        {% for p in pagination.iter_pages() %}
+          {% if p %}
+          <a href="{{ url_for('sessions.history', page=p) }}" class="page-btn {% if p==pagination.page %}current{% endif %}">{{ p }}</a>
+          {% else %}
+          <span class="page-info">…</span>
+          {% endif %}
+        {% endfor %}
+        <span class="page-info">Page {{ pagination.page }} dari {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('sessions.history', page=pagination.next_num) }}" class="page-btn">Next →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">◈</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text-sub);margin-bottom:.5rem">Belum ada sesi tercatat</div>
+        <div style="font-size:13px;">Selesaikan latihan pertama Anda untuk mulai membangun riwayat.</div>
+        <a href="{{ url_for('exercises.index') }}" style="display:inline-flex;margin-top:1.25rem;background:var(--blue);color:#04090f;padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:700;text-decoration:none;">Browse Exercises</a>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <script>
+    const mobileToggle = document.getElementById('mobileToggle');
+    const mobileNav = document.getElementById('mobileNav');
+    if(mobileToggle) { mobileToggle.addEventListener('click', () => { mobileNav.classList.toggle('open'); mobileToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰'; }); }
+
+    document.querySelectorAll('.filter-tag').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+      });
+    });
+    function filterSessions(status, el) {
+      document.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.session-row').forEach(row => {
+        row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+      });
+    }
+    document.querySelectorAll('.flash').forEach(el=>{ setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity 0.4s ease'; setTimeout(()=>el.remove(),400); },4000); });
+  </script>
+</body>
+</html>

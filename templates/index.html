@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MotionMate — AI-Powered Home Rehabilitation</title>
+  <!-- MotionMate Icons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <!-- / Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #04090f; --bg-2: #070e17; --bg-3: #0b1520; --bg-card: #08111c;
+      --border: rgba(24,184,214,0.08); --border-accent: rgba(24,184,214,0.35);
+      --blue: #18B8D6; --blue-dim: rgba(24,184,214,0.10); --blue-glow: rgba(24,184,214,0.28);
+      --blue-dark: #0d7a90; --blue-bright: #36d4ef;
+      --white: #eef4f8; --white-dim: rgba(238,244,248,0.7);
+      --text-muted: #4a6375; --text-sub: #7a97ab;
+      --danger: #ff4f5e; --warning: #f59e0b;
+      --radius: 10px; --radius-lg: 16px; --radius-xl: 24px;
+      --font-body: 'Outfit', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+      --nav-h: 68px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body { background: var(--bg); color: var(--white); font-family: var(--font-body); line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: var(--bg-2); } ::-webkit-scrollbar-thumb { background: var(--blue-dark); border-radius: 3px; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); opacity: 0.4; pointer-events: none; z-index: 1; }
+    .cursor-glow { position: fixed; width: 400px; height: 400px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(24,184,214,0.06) 0%, transparent 70%); transform: translate(-50%,-50%); z-index: 0; transition: 0.15s ease; }
+
+    /* NAV */
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--nav-h); display: flex; align-items: center; justify-content: space-between; padding: 0 2.5rem; background: rgba(4,9,15,0.75); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); transition: all 0.3s ease; }
+    .nav.scrolled { background: rgba(4,9,15,0.95); border-bottom-color: var(--border-accent); }
+    .nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--white); }
+    .nav__logo-mark { width: 36px; height: 36px; background: linear-gradient(135deg,var(--blue),var(--blue-dark)); color: #04090f; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 15px; border-radius: 8px; box-shadow: 0 0 20px var(--blue-glow); }
+    .nav__logo-text { font-weight: 700; font-size: 16px; letter-spacing: -0.3px; }
+    .nav__links { display: flex; align-items: center; gap: 0.25rem; }
+    .nav__link { color: var(--text-sub); text-decoration: none; font-size: 14px; padding: 7px 16px; border-radius: 7px; transition: color 0.2s, background 0.2s; font-weight: 400; }
+    .nav__link:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+    .nav__badge { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-dim); border: 1px solid var(--border-accent); color: var(--blue); font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 20px; cursor: pointer; text-decoration: none; transition: all 0.2s; font-family: var(--font-mono); letter-spacing: 0.5px; }
+    .nav__badge:hover { background: rgba(24,184,214,0.18); box-shadow: 0 0 20px var(--blue-glow); }
+    .nav__mobile-toggle { display: none; background: none; border: 1px solid var(--border); color: var(--text-sub); padding: 6px 10px; border-radius: 7px; cursor: pointer; font-size: 18px; }
+
+    /* HERO */
+    .hero { min-height: 100vh; padding-top: var(--nav-h); display: flex; align-items: center; position: relative; overflow: hidden; }
+    .hero__bg-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(24,184,214,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(24,184,214,0.04) 1px,transparent 1px); background-size: 50px 50px; mask-image: radial-gradient(ellipse 80% 80% at 50% 40%,black 0%,transparent 100%); }
+    .hero__orb-1 { position: absolute; width: 700px; height: 700px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle,rgba(24,184,214,0.10) 0%,transparent 70%); top: -100px; right: -100px; z-index: 0; animation: orbFloat 8s ease-in-out infinite; }
+    .hero__orb-2 { position: absolute; width: 500px; height: 500px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle,rgba(13,122,144,0.08) 0%,transparent 70%); bottom: 0; left: -100px; z-index: 0; animation: orbFloat 12s ease-in-out infinite reverse; }
+    @keyframes orbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
+    .hero__inner { max-width: 1200px; margin: 0 auto; padding: 5rem 2.5rem; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 5rem; align-items: center; position: relative; z-index: 2; }
+    .hero__badge { display: inline-flex; align-items: center; gap: 10px; background: var(--blue-dim); border: 1px solid var(--border-accent); color: var(--blue); font-size: 11px; font-weight: 500; padding: 6px 14px; border-radius: 20px; margin-bottom: 1.75rem; font-family: var(--font-mono); letter-spacing: 1px; text-transform: uppercase; opacity: 0; animation: fadeUp 0.6s ease 0.2s forwards; }
+    .hero__badge-dot { width: 7px; height: 7px; background: var(--blue); border-radius: 50%; animation: pulse 2s infinite; box-shadow: 0 0 8px var(--blue); }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+    .hero__title { font-size: clamp(2.2rem,5.5vw,4rem); font-weight: 800; line-height: 1.05; letter-spacing: -2px; color: var(--white); margin-bottom: 1.5rem; opacity: 0; animation: fadeUp 0.7s ease 0.35s forwards; }
+    .hero__title .line { display: block; }
+    .hero__title .accent { background: linear-gradient(135deg,var(--blue),var(--blue-bright)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero__subtitle { font-size: 17px; color: var(--text-sub); line-height: 1.75; max-width: 500px; margin-bottom: 2.5rem; font-weight: 300; opacity: 0; animation: fadeUp 0.7s ease 0.5s forwards; }
+    .hero__cta { display: flex; gap: 14px; flex-wrap: wrap; opacity: 0; animation: fadeUp 0.7s ease 0.65s forwards; }
+    .hero__stats-row { display: flex; gap: 2rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); flex-wrap: wrap; opacity: 0; animation: fadeUp 0.7s ease 0.8s forwards; }
+    .hero__stat-num { font-size: 1.8rem; font-weight: 800; color: var(--blue); font-family: var(--font-mono); letter-spacing: -1px; }
+    .hero__stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+    /* BUTTONS */
+    .btn-primary { display: inline-flex; align-items: center; gap: 10px; background: var(--blue); color: #04090f; font-family: var(--font-body); font-weight: 700; font-size: 15px; padding: 13px 28px; border-radius: var(--radius); text-decoration: none; border: none; cursor: pointer; transition: all 0.25s; letter-spacing: -0.2px; box-shadow: 0 0 30px rgba(24,184,214,0.4); }
+    .btn-primary:hover { background: var(--blue-bright); box-shadow: 0 0 50px rgba(24,184,214,0.6); transform: translateY(-2px); }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 10px; background: transparent; color: var(--text-sub); font-family: var(--font-body); font-weight: 500; font-size: 15px; padding: 13px 28px; border-radius: var(--radius); text-decoration: none; border: 1px solid var(--border); cursor: pointer; transition: all 0.25s; }
+    .btn-ghost:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); transform: translateY(-2px); }
+
+    /* HERO VISUAL */
+    .hero__visual { position: relative; opacity: 0; animation: fadeLeft 0.9s ease 0.4s forwards; }
+    @keyframes fadeLeft { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+    .hero__phone-frame { background: var(--bg-card); border: 1px solid var(--border-accent); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(24,184,214,0.12); }
+    .phone-top-bar { background: var(--bg-2); padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .phone-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .phone-url { flex: 1; background: var(--bg-3); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); margin-left: 8px; }
+    .dashboard-preview { padding: 1.25rem; }
+    .dp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .dp-greeting { font-size: 11px; color: var(--blue); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1.5px; }
+    .dp-name { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .dp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+    .dp-stat { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; position: relative; overflow: hidden; }
+    .dp-stat::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,var(--blue),transparent); }
+    .dp-stat-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+    .dp-stat-val { font-size: 22px; font-weight: 700; font-family: var(--font-mono); color: var(--white); letter-spacing: -1px; margin-top: 4px; }
+    .dp-stat-sub { font-size: 10px; color: var(--blue); font-family: var(--font-mono); }
+    .dp-progress-card { background: var(--bg-3); border: 1px solid var(--border-accent); border-radius: var(--radius); padding: 14px; }
+    .dp-prog-label { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .dp-prog-bar-wrap { background: var(--bg-2); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 6px; }
+    .dp-prog-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg,var(--blue),var(--blue-bright)); animation: growBar 1.8s ease forwards; }
+    @keyframes growBar { from{width:0} }
+    .dp-prog-footer { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
+    .dp-session-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .dp-session-row { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+    .dp-session-icon { width: 30px; height: 30px; background: var(--blue-dim); border-radius: 7px; display: grid; place-items: center; color: var(--blue); font-size: 14px; flex-shrink: 0; }
+    .dp-session-name { font-size: 12px; font-weight: 500; color: var(--white); }
+    .dp-session-meta { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+    .dp-session-score { margin-left: auto; font-size: 12px; font-family: var(--font-mono); color: var(--blue); font-weight: 600; }
+    .hero__float-badge { position: absolute; top: -16px; left: -16px; background: linear-gradient(135deg,var(--blue),var(--blue-dark)); color: #04090f; padding: 10px 18px; border-radius: 12px; font-size: 12px; font-weight: 700; font-family: var(--font-mono); box-shadow: 0 8px 30px rgba(24,184,214,0.4); animation: badgeFloat 3s ease-in-out infinite; }
+    .hero__float-badge-2 { position: absolute; bottom: 16px; right: -16px; background: var(--bg-card); border: 1px solid var(--border-accent); color: var(--blue); padding: 10px 18px; border-radius: 12px; font-size: 12px; font-family: var(--font-mono); box-shadow: 0 8px 30px rgba(0,0,0,0.4); animation: badgeFloat 3s ease-in-out 1.5s infinite; }
+    @keyframes badgeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+    /* SECTIONS */
+    .section { padding: 7rem 2.5rem; position: relative; overflow: hidden; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: var(--blue); text-transform: uppercase; margin-bottom: 1.25rem; }
+    .section-tag::before { content: ''; width: 24px; height: 1px; background: var(--blue); }
+    .section-title { font-size: clamp(1.8rem,3.5vw,2.8rem); font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 1.25rem; }
+    .section-title .accent { background: linear-gradient(135deg,var(--blue),var(--blue-bright)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .section-sub { font-size: 17px; color: var(--text-sub); max-width: 580px; line-height: 1.75; font-weight: 300; }
+    .problem-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+    /* PROBLEM GRID */
+    .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; margin-top: 4rem; }
+    .problem-stats { display: flex; flex-direction: column; gap: 1.5rem; }
+    .pstat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem 2rem; display: flex; gap: 1.5rem; align-items: center; transition: all 0.3s; position: relative; overflow: hidden; }
+    .pstat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--blue); transform: scaleY(0); transition: transform 0.3s; transform-origin: bottom; }
+    .pstat-card:hover { border-color: var(--border-accent); transform: translateX(6px); }
+    .pstat-card:hover::before { transform: scaleY(1); }
+    .pstat-num { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); letter-spacing: -2px; flex-shrink: 0; line-height: 1; }
+    .pstat-label { font-size: 14px; color: var(--text-sub); line-height: 1.5; }
+    .pstat-sublabel { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .problem-big-text { font-size: clamp(1.2rem,2.5vw,1.9rem); font-weight: 300; line-height: 1.6; color: var(--text-sub); margin-bottom: 1.5rem; }
+    .problem-big-text strong { color: var(--white); font-weight: 700; }
+    .problem-quote { background: var(--blue-dim); border-left: 3px solid var(--blue); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.25rem 1.5rem; font-size: 14px; color: var(--white-dim); line-height: 1.7; font-style: italic; }
+
+    /* HOW IT WORKS */
+    .how-section { background: var(--bg); }
+    .steps-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; margin-top: 4rem; }
+    .step-card { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 2rem; transition: all 0.35s; overflow: hidden; }
+    .step-card:hover { border-color: var(--border-accent); transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.4),0 0 30px rgba(24,184,214,0.08); }
+    .step-number { font-size: 4rem; font-weight: 800; font-family: var(--font-mono); color: rgba(24,184,214,0.12); letter-spacing: -3px; line-height: 1; margin-bottom: 1rem; }
+    .step-icon { width: 48px; height: 48px; background: var(--blue-dim); border: 1px solid var(--border-accent); border-radius: 12px; display: grid; place-items: center; font-size: 22px; color: var(--blue); margin-bottom: 1.25rem; }
+    .step-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .step-desc { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+
+    /* FEATURES */
+    .features-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; }
+    .feat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; transition: all 0.3s; }
+    .feat-card:hover { border-color: var(--border-accent); transform: translateY(-4px); }
+    .feat-card--wide { grid-column: span 2; }
+    .feat-card-icon { width: 44px; height: 44px; background: var(--blue-dim); border: 1px solid var(--border-accent); border-radius: 10px; display: grid; place-items: center; font-size: 20px; color: var(--blue); margin-bottom: 1.25rem; }
+    .feat-card-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .feat-card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+    .feat-tag { display: inline-block; margin-top: 1rem; font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 4px; background: var(--blue-dim); color: var(--blue); border: 1px solid var(--border-accent); }
+    .feat-tag--wip { background: rgba(245,158,11,0.1); color: var(--warning); border-color: rgba(245,158,11,0.3); }
+
+    /* TECH */
+    .tech-section { background: var(--bg); }
+    .tech-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 4rem; }
+    .tech-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; display: flex; gap: 1rem; align-items: flex-start; transition: all 0.3s; }
+    .tech-card:hover { border-color: var(--border-accent); }
+    .tech-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--blue-dim); border: 1px solid var(--border-accent); display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+    .tech-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .tech-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
+    /* MARKET */
+    .market-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; margin-top: 4rem; }
+    .market-bars { display: flex; flex-direction: column; gap: 1.25rem; }
+    .mbar-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; font-family: var(--font-mono); }
+    .mbar-label span:last-child { color: var(--blue); }
+    .mbar-track { background: var(--bg-3); height: 8px; border-radius: 4px; overflow: hidden; }
+    .mbar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,var(--blue-dark),var(--blue)); animation: growBar 2s ease forwards; }
+    .mbar-fill-2 { animation-delay: 0.3s; }
+    .mbar-fill-3 { animation-delay: 0.6s; }
+    .market-funnel { display: flex; flex-direction: column; gap: 4px; }
+    .funnel-step { border-radius: var(--radius); padding: 1.25rem 1.5rem; background: var(--bg-card); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: all 0.3s; }
+    .funnel-step:hover { border-color: var(--border-accent); }
+    .funnel-label { font-size: 13px; font-weight: 500; }
+    .funnel-sub { font-size: 11px; color: var(--text-muted); }
+    .funnel-value { font-size: 16px; font-weight: 700; font-family: var(--font-mono); color: var(--blue); }
+
+    /* QUOTE */
+    .quote-section { background: var(--bg); text-align: center; padding: 7rem 2.5rem; }
+    .quote-giant { font-size: clamp(1.5rem,4vw,3.2rem); font-weight: 300; line-height: 1.4; color: var(--white-dim); max-width: 900px; margin: 0 auto 2rem; letter-spacing: -0.5px; }
+    .quote-giant strong { color: var(--white); font-weight: 800; }
+    .quote-giant .accent { background: linear-gradient(135deg,var(--blue),var(--blue-bright)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .quote-source { font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); }
+
+    /* ROADMAP */
+    .roadmap-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .roadmap-cards { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; margin-top: 4rem; }
+    .roadmap-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; transition: all 0.3s; }
+    .roadmap-card:hover { border-color: var(--border-accent); }
+    .roadmap-phase { font-size: 10px; font-family: var(--font-mono); color: var(--blue); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+    .roadmap-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .roadmap-items { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .roadmap-items li { font-size: 12px; color: var(--text-sub); padding-left: 16px; position: relative; }
+    .roadmap-items li::before { content: '→'; position: absolute; left: 0; color: var(--blue); font-size: 10px; }
+    .roadmap-items li.done::before { content: '✓'; color: #22c55e; }
+    .roadmap-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 10px; font-family: var(--font-mono); padding: 3px 10px; border-radius: 20px; }
+    .roadmap-status.done { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .roadmap-status.active { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--border-accent); }
+    .roadmap-status.upcoming { background: rgba(245,158,11,0.1); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+
+    /* PRICING */
+    .pricing-section { background: var(--bg); }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 4rem; }
+    .pricing-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 2.25rem; position: relative; transition: all 0.35s; }
+    .pricing-card:hover { transform: translateY(-4px); border-color: var(--border-accent); }
+    .pricing-card--featured { border-color: var(--blue); background: linear-gradient(160deg,rgba(24,184,214,0.06),var(--bg-card)); box-shadow: 0 0 60px rgba(24,184,214,0.12); }
+    .pricing-best { position: absolute; top: -1px; left: 50%; transform: translateX(-50%); background: var(--blue); color: #04090f; font-size: 10px; font-weight: 800; font-family: var(--font-mono); letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 0 0 8px 8px; white-space: nowrap; }
+    .pricing-tier { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+    .pricing-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+    .pricing-amount { font-size: 2.25rem; font-weight: 800; font-family: var(--font-mono); letter-spacing: -1.5px; }
+    .pricing-period { font-size: 13px; color: var(--text-muted); }
+    .pricing-desc { font-size: 13px; color: var(--text-sub); margin-bottom: 1.75rem; line-height: 1.5; }
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+    .pricing-features li { font-size: 13px; color: var(--text-sub); display: flex; align-items: center; gap: 10px; }
+    .pricing-features li .check { color: var(--blue); font-size: 14px; flex-shrink: 0; }
+    .pricing-features li .x { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+
+    /* TEAM */
+    .team-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .team-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 4rem; max-width: 900px; }
+    .team-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; transition: all 0.3s; }
+    .team-card:hover { border-color: var(--border-accent); transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.4),0 0 30px rgba(24,184,214,0.08); }
+    .team-photo { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg,var(--bg-3),var(--bg-2)); display: grid; place-items: center; overflow: hidden; border-bottom: 1px solid var(--border); position: relative; }
+    .team-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform 0.4s ease; filter: saturate(0.85) brightness(0.9); }
+    .team-card:hover .team-photo img { transform: scale(1.04); filter: saturate(1) brightness(1); }
+    .team-photo-fallback { font-size: 5rem; opacity: 0.3; }
+    .team-photo-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,17,28,0.5) 0%, transparent 55%); pointer-events: none; }
+    .team-info { padding: 1.5rem; }
+    .team-name { font-size: 15px; font-weight: 800; margin-bottom: 3px; letter-spacing: -0.3px; }
+    .team-role { font-size: 11px; color: var(--blue); font-family: var(--font-mono); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.2px; }
+    .team-bio { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+
+    /* CTA */
+    .cta-section { background: var(--bg); text-align: center; padding: 8rem 2.5rem; position: relative; overflow: hidden; }
+    .cta-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 50%,rgba(24,184,214,0.08),transparent); }
+    .cta-inner { position: relative; z-index: 2; }
+    .cta-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2.5px; color: var(--blue); text-transform: uppercase; margin-bottom: 1.25rem; }
+    .cta-title { font-size: clamp(2rem,5vw,4rem); font-weight: 800; letter-spacing: -2px; margin-bottom: 1.25rem; line-height: 1.05; }
+    .cta-title .accent { background: linear-gradient(135deg,var(--blue),var(--blue-bright)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .cta-sub { font-size: 17px; color: var(--text-sub); max-width: 480px; margin: 0 auto 2.5rem; line-height: 1.7; font-weight: 300; }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .cta-note { font-size: 12px; color: var(--text-muted); margin-top: 1.5rem; font-family: var(--font-mono); }
+
+    /* FOOTER */
+    .footer { background: var(--bg-2); border-top: 1px solid var(--border); padding: 3rem 2.5rem 2rem; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
+    .footer-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; text-decoration: none; color: var(--white); }
+    .footer-logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg,var(--blue),var(--blue-dark)); color: #04090f; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 14px; border-radius: 7px; }
+    .footer-tagline { font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 240px; }
+    .footer-col-title { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 1rem; }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .footer-links a { font-size: 13px; color: var(--text-sub); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-bottom { border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .footer-copy { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+    .social-btn { width: 34px; height: 34px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); display: grid; place-items: center; font-size: 14px; color: var(--text-muted); text-decoration: none; transition: all 0.2s; }
+    .social-btn:hover { border-color: var(--border-accent); color: var(--blue); }
+
+    /* SCROLL REVEAL */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.1s; } .reveal-d2 { transition-delay: 0.2s; } .reveal-d3 { transition-delay: 0.3s; } .reveal-d4 { transition-delay: 0.4s; }
+
+    /* FLASH */
+    .flash-wrap { position: fixed; top: calc(var(--nav-h) + 14px); left: 50%; transform: translateX(-50%); z-index: 300; min-width: 320px; max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
+    .flash { padding: 12px 18px; border-radius: var(--radius); font-size: 14px; border: 1px solid transparent; animation: slideDown 0.25s ease; }
+    .flash--success { background: rgba(24,184,214,.12); border-color: rgba(24,184,214,.3); color: var(--blue); }
+    .flash--danger { background: rgba(255,79,94,.12); border-color: rgba(255,79,94,.3); color: #ff4f5e; }
+    .flash--info { background: rgba(96,165,250,.12); border-color: rgba(96,165,250,.3); color: #60a5fa; }
+    .flash--warning { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.3); color: #f59e0b; }
+    @keyframes slideDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* MOBILE NAV DRAWER */
+    .mobile-nav { display: none; position: fixed; top: var(--nav-h); left: 0; right: 0; background: rgba(4,9,15,0.98); border-bottom: 1px solid var(--border-accent); padding: 1.5rem 2rem; flex-direction: column; gap: 8px; z-index: 99; backdrop-filter: blur(20px); }
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a { color: var(--text-sub); text-decoration: none; font-size: 15px; padding: 10px 14px; border-radius: 8px; transition: all 0.2s; }
+    .mobile-nav a:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+
+    /* RESPONSIVE */
+    @media (max-width: 1024px) {
+      .hero__inner { grid-template-columns: 1fr; gap: 3rem; }
+      .hero__visual { display: none; }
+      .problem-grid, .market-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .team-grid { grid-template-columns: 1fr 1fr 1fr; }
+      .feat-grid { grid-template-columns: 1fr; }
+      .feat-card--wide { grid-column: span 1; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 2rem; }
+      .roadmap-cards { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .pricing-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .tech-grid { grid-template-columns: 1fr; }
+      .section { padding: 4rem 1.5rem; }
+      .nav { padding: 0 1.25rem; }
+      .nav__links { display: none; }
+      .nav__mobile-toggle { display: block; }
+      .hero__inner { padding: 3rem 1.5rem; }
+      .hero__stats-row { gap: 1.5rem; }
+      .footer-top { grid-template-columns: 1fr; gap: 2rem; }
+      .pricing-card { padding: 1.75rem; }
+      .cta-section { padding: 5rem 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .team-grid { grid-template-columns: 1fr 1fr; }
+      .dp-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- Flash messages -->
+<div class="flash-wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash flash--{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <a href="{{ url_for('main.index') }}" class="nav__brand">
+    <span class="nav__logo-mark">M</span>
+    <span class="nav__logo-text">MotionMate</span>
+  </a>
+  <div class="nav__links">
+    <a href="#how" class="nav__link">How it Works</a>
+    <a href="#features" class="nav__link">Features</a>
+    <a href="#market" class="nav__link">Market</a>
+    <a href="#pricing" class="nav__link">Pricing</a>
+    <a href="#team" class="nav__link">Team</a>
+    {% if authenticated or dummy_mode %}
+      <a href="{{ url_for('dashboard.index') }}" class="nav__link">Dashboard</a>
+      <a href="{{ url_for('auth.logout') }}" class="nav__link" style="color:var(--text-muted)">Logout</a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}" class="nav__link">Login</a>
+      <a href="{{ url_for('auth.register') }}" class="nav__badge">
+        <span style="width:6px;height:6px;background:var(--blue);border-radius:50%;"></span>
+        Get Started
+      </a>
+    {% endif %}
+  </div>
+  <button class="nav__mobile-toggle" id="mobileToggle" aria-label="Menu">☰</button>
+</nav>
+
+<!-- Mobile Nav Drawer -->
+<div class="mobile-nav" id="mobileNav">
+  <a href="#how">How it Works</a>
+  <a href="#features">Features</a>
+  <a href="#market">Market</a>
+  <a href="#pricing">Pricing</a>
+  <a href="#team">Team</a>
+  {% if authenticated or dummy_mode %}
+    <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+    <a href="{{ url_for('auth.logout') }}" style="color:var(--text-muted)">Logout</a>
+  {% else %}
+    <a href="{{ url_for('auth.login') }}">Login</a>
+    <a href="{{ url_for('auth.register') }}" style="color:var(--blue);font-weight:700;">Get Started →</a>
+  {% endif %}
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero__bg-grid"></div>
+  <div class="hero__orb-1"></div>
+  <div class="hero__orb-2"></div>
+  <div class="hero__inner">
+    <div class="hero__left">
+      <div class="hero__badge">
+        <span class="hero__badge-dot"></span>
+        AI-Powered · Rehabilitation · Platform
+      </div>
+      <h1 class="hero__title">
+        <span class="line">Recover smarter,</span>
+        <span class="line accent">move better,</span>
+        <span class="line">feel stronger.</span>
+      </h1>
+      <p class="hero__subtitle">
+        MotionMate adalah platform rehabilitasi rumahan berbasis AI yang menggunakan <strong style="color:var(--white)">pose detection real-time</strong> untuk memastikan setiap gerakan yang Anda lakukan itu tepat, aman, dan efektif — tanpa perlu datang ke klinik.
+      </p>
+      <div class="hero__cta">
+        {% if authenticated %}
+          <a href="{{ url_for('dashboard.index') }}" class="btn-primary">
+            Go to Dashboard <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        {% elif dummy_mode %}
+          <a href="{{ url_for('dashboard.index') }}" class="btn-primary">
+            🎭 Exploring Demo <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="{{ url_for('main.disable_dummy') }}" class="btn-ghost">Exit Demo Mode</a>
+        {% else %}
+          <a href="{{ url_for('auth.register') }}" class="btn-primary">
+            Mulai Gratis <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="{{ url_for('main.enable_dummy') }}" class="btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Explore with Dummy Data
+          </a>
+        {% endif %}
+      </div>
+      <div class="hero__stats-row">
+        <div><div class="hero__stat-num">15M+</div><div class="hero__stat-label">pasien rehab/tahun di Indonesia</div></div>
+        <div><div class="hero__stat-num">70%</div><div class="hero__stat-label">gagal tanpa panduan profesional</div></div>
+        <div><div class="hero__stat-num">1:30K</div><div class="hero__stat-label">rasio fisioterapis vs populasi</div></div>
+      </div>
+    </div>
+    <div class="hero__visual">
+      <div class="hero__float-badge">◎ AI Tracking Active</div>
+      <div class="hero__phone-frame">
+        <div class="phone-top-bar">
+          <div class="phone-dot" style="background:#ff5f57"></div>
+          <div class="phone-dot" style="background:#febc2e"></div>
+          <div class="phone-dot" style="background:#28c840"></div>
+          <div class="phone-url">motionmate.id/dashboard</div>
+        </div>
+        <div class="dashboard-preview">
+          <div class="dp-header">
+            <div><div class="dp-greeting">Recovery Overview</div><div class="dp-name">Hello, Budi 👋</div></div>
+            <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);">Hari ke-12</div>
+          </div>
+          <div class="dp-stats">
+            <div class="dp-stat"><div class="dp-stat-label">Sessions</div><div class="dp-stat-val">24</div><div class="dp-stat-sub">+3 minggu ini</div></div>
+            <div class="dp-stat"><div class="dp-stat-label">Akurasi</div><div class="dp-stat-val">87%</div><div class="dp-stat-sub">di atas target</div></div>
+            <div class="dp-stat"><div class="dp-stat-label">Streak</div><div class="dp-stat-val">12d</div><div class="dp-stat-sub">personal best!</div></div>
+            <div class="dp-stat"><div class="dp-stat-label">Total Reps</div><div class="dp-stat-val">480</div><div class="dp-stat-sub">since joining</div></div>
+          </div>
+          <div class="dp-progress-card">
+            <div class="dp-prog-label">Progress Sesi — Knee Extension</div>
+            <div class="dp-prog-bar-wrap"><div class="dp-prog-bar" style="width:75%"></div></div>
+            <div class="dp-prog-footer"><span>12 / 15 reps · Set 2 of 3</span><span style="color:var(--blue)">75%</span></div>
+          </div>
+          <div class="dp-session-list">
+            <div class="dp-session-row"><div class="dp-session-icon">◎</div><div><div class="dp-session-name">Knee Extension</div><div class="dp-session-meta">orthopedic · 3 sets · 10 reps</div></div><div class="dp-session-score">92%</div></div>
+            <div class="dp-session-row"><div class="dp-session-icon">▲</div><div><div class="dp-session-name">Shoulder Rotation</div><div class="dp-session-meta">sports · 2 sets · 15 reps</div></div><div class="dp-session-score">84%</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="hero__float-badge-2">📈 +15% improvement this week</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section problem-section" id="problem">
+  <div class="section-inner">
+    <div class="section-tag reveal">The Problem</div>
+    <h2 class="section-title reveal reveal-d1">Rehabilitasi rumahan <span class="accent">di Indonesia itu masih rusak.</span></h2>
+    <p class="section-sub reveal reveal-d2">Jutaan pasien pasca-rehabilitasi dipulangkan dengan selembar kertas instruksi. Tidak ada panduan visual, tidak ada umpan balik, tidak ada cara mengukur apakah mereka melakukan gerakan dengan benar.</p>
+    <div class="problem-grid">
+      <div class="problem-stats">
+        <div class="pstat-card reveal"><div class="pstat-num">70%</div><div><div class="pstat-label">pasien gagal menyelesaikan program latihan rumahan mereka</div><div class="pstat-sublabel">Sumber: Kemenkes RI, 2023</div></div></div>
+        <div class="pstat-card reveal reveal-d1"><div class="pstat-num">1:30K</div><div><div class="pstat-label">rasio fisioterapis per penduduk di Indonesia — jauh di bawah standar WHO 1:5K</div><div class="pstat-sublabel">WHO, Global Physiotherapy Benchmark</div></div></div>
+        <div class="pstat-card reveal reveal-d2"><div class="pstat-num">Rp 2.3T</div><div><div class="pstat-label">biaya komplikasi akibat rehabilitasi yang tidak tuntas per tahun</div><div class="pstat-sublabel">Estimasi berdasarkan data BPJS Kesehatan</div></div></div>
+        <div class="pstat-card reveal reveal-d3"><div class="pstat-num">15M+</div><div><div class="pstat-label">pasien rehabilitasi baru setiap tahun — stroke, ortopedi, olahraga, jantung</div><div class="pstat-sublabel">Riset Kesehatan Dasar (Riskesdas) 2023</div></div></div>
+      </div>
+      <div>
+        <div class="problem-big-text reveal">"Pasien dipulangkan dengan kertas instruksi. <strong>Tanpa video. Tanpa umpan balik. Tanpa cara tahu apakah gerakannya benar.</strong> Akibatnya, cederanya kambuh, progress stagnan, dan kualitas hidup tidak membaik."</div>
+        <div class="problem-quote reveal reveal-d1">Dokter spesialis ortopedi biasanya hanya punya 10–15 menit per pasien di klinik. Tidak ada waktu untuk mengajarkan setiap latihan secara mendalam. Platform digital yang memandu pasien di rumah bukan sekadar bagus — ini kebutuhan medis nyata.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section how-section" id="how">
+  <div class="section-inner">
+    <div class="section-tag reveal">How It Works</div>
+    <h2 class="section-title reveal reveal-d1">4 langkah menuju <span class="accent">pemulihan sempurna</span></h2>
+    <p class="section-sub reveal reveal-d2">Dari daftar hingga sesi pertama, semuanya bisa diselesaikan dalam 5 menit.</p>
+    <div class="steps-grid">
+      <div class="step-card reveal"><div class="step-number">01</div><div class="step-icon">👤</div><div class="step-title">Buat Akun</div><div class="step-desc">Daftar gratis dalam hitungan detik. Masukkan profil kesehatan dasar untuk rekomendasi latihan yang dipersonalisasi.</div></div>
+      <div class="step-card reveal reveal-d1"><div class="step-number">02</div><div class="step-icon">📋</div><div class="step-title">Pilih Program</div><div class="step-desc">Pilih dari library latihan terverifikasi fisioterapis berdasarkan kategori: stroke, ortopedi, olahraga, lansia, atau jantung.</div></div>
+      <div class="step-card reveal reveal-d2"><div class="step-number">03</div><div class="step-icon">🎯</div><div class="step-title">Mulai Sesi</div><div class="step-desc">Kamera AI mendeteksi pose tubuh secara real-time. Sistem memberikan umpan balik instan jika postur menyimpang dari yang diresepkan.</div></div>
+      <div class="step-card reveal reveal-d3"><div class="step-number">04</div><div class="step-icon">📈</div><div class="step-title">Lacak Progress</div><div class="step-desc">Dashboard analitik menampilkan tren akurasi, streak latihan, reps kumulatif, dan milestone pemulihan dari waktu ke waktu.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section features-section" id="features">
+  <div class="section-inner">
+    <div class="section-tag reveal">Platform Features</div>
+    <h2 class="section-title reveal reveal-d1">Semua yang Anda butuhkan untuk <span class="accent">pulih mandiri</span></h2>
+    <p class="section-sub reveal reveal-d2">Dibangun untuk pasien, fisioterapis, dan klinik — dengan roadmap fitur yang terus berkembang.</p>
+    <div class="feat-grid">
+      <div class="feat-card reveal"><div class="feat-card-icon">◎</div><div class="feat-card-title">Real-Time Pose Feedback</div><div class="feat-card-desc">MediaPipe melacak 33 landmark tubuh per frame, memberi peringatan instan saat postur menyimpang dari bentuk yang diresepkan.</div><div class="feat-tag feat-tag--wip">Coming Soon</div></div>
+      <div class="feat-card reveal reveal-d1"><div class="feat-card-icon">📚</div><div class="feat-card-title">Exercise Library</div><div class="feat-card-desc">Library latihan terverifikasi fisioterapis diorganisir berdasarkan kategori: stroke, cedera olahraga, ortopedi, mobilitas lansia, dan kardiak.</div><div class="feat-tag">Tersedia</div></div>
+      <div class="feat-card reveal reveal-d2"><div class="feat-card-icon">📊</div><div class="feat-card-title">Progress Analytics</div><div class="feat-card-desc">Lacak reps, skor akurasi, frekuensi sesi, dan milestone pemulihan dari waktu ke waktu dengan dashboard visual yang lengkap.</div><div class="feat-tag">Tersedia</div></div>
+      <div class="feat-card reveal reveal-d3"><div class="feat-card-icon">🩺</div><div class="feat-card-title">Physio Protocols</div><div class="feat-card-desc">Fisioterapis bisa menetapkan program pemulihan kustom yang disampaikan platform sesi per sesi kepada pasien mereka.</div><div class="feat-tag feat-tag--wip">Coming Soon</div></div>
+      <div class="feat-card reveal"><div class="feat-card-icon">🏥</div><div class="feat-card-title">Clinic B2B Dashboard</div><div class="feat-card-desc">Tier SaaS B2B — klinik memantau kepatuhan pasien, akurasi postur, dan milestone pemulihan secara remote dari satu dashboard.</div><div class="feat-tag feat-tag--wip">Coming Soon</div></div>
+      <div class="feat-card reveal reveal-d1"><div class="feat-card-icon">🌐</div><div class="feat-card-title">Berjalan di Browser</div><div class="feat-card-desc">Tidak perlu install aplikasi. MediaPipe berjalan client-side via WebAssembly — data video Anda tidak pernah meninggalkan perangkat Anda.</div><div class="feat-tag feat-tag--wip">Coming Soon</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section class="section tech-section">
+  <div class="section-inner">
+    <div class="section-tag reveal">Technology</div>
+    <h2 class="section-title reveal reveal-d1">Dibangun di atas <span class="accent">teknologi terpercaya</span></h2>
+    <div class="tech-grid">
+      <div class="tech-card reveal"><div class="tech-icon">🐍</div><div><div class="tech-name">Flask + Python</div><div class="tech-desc">Backend lightweight dengan pattern MVC yang bersih. Blueprint-based routing, SQLAlchemy ORM, session-based auth.</div></div></div>
+      <div class="tech-card reveal reveal-d1"><div class="tech-icon">🗄️</div><div><div class="tech-name">SQLAlchemy + SQLite</div><div class="tech-desc">ORM relasional yang teruji. Dev menggunakan SQLite, produksi siap migrasi ke PostgreSQL dengan zero code changes.</div></div></div>
+      <div class="tech-card reveal reveal-d2"><div class="tech-icon">🤸</div><div><div class="tech-name">MediaPipe (In Dev)</div><div class="tech-desc">Google's MediaPipe Pose melacak 33 landmark tubuh per frame via WebAssembly — semua berjalan di sisi klien, privasi terjaga.</div></div></div>
+      <div class="tech-card reveal reveal-d3"><div class="tech-icon">🛡️</div><div><div class="tech-name">Security First</div><div class="tech-desc">XSS prevention, password hashing PBKDF2-SHA256, open redirect protection, session hardening, input validation ketat.</div></div></div>
+      <div class="tech-card reveal"><div class="tech-icon">🧪</div><div><div class="tech-name">pytest Test Suite</div><div class="tech-desc">Coverage lengkap: auth flows, validator, route tests, session complete, accuracy clamping — siap CI/CD pipeline.</div></div></div>
+      <div class="tech-card reveal reveal-d1"><div class="tech-icon">☁️</div><div><div class="tech-name">Cloud Ready</div><div class="tech-desc">Siap deploy ke AWS/GCP/Heroku dengan Docker containerization. Konfigurasi per-environment yang bersih.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section class="section market-section" id="market">
+  <div class="section-inner">
+    <div class="section-tag reveal">Market Opportunity</div>
+    <h2 class="section-title reveal reveal-d1">Pasar yang <span class="accent">sangat underserved</span></h2>
+    <p class="section-sub reveal reveal-d2">Digital health di Indonesia tumbuh 35% YoY pasca-pandemi. Tidak ada pemain dominan di segmen rehabilitasi rumahan berbasis AI.</p>
+    <div class="market-grid">
+      <div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:2rem;color:var(--white-dim)" class="reveal">Total Addressable Market — Indonesia</div>
+        <div class="market-bars">
+          <div class="reveal"><div class="mbar-label"><span>Digital Health Market 2025</span><span>USD 4.2B</span></div><div class="mbar-track"><div class="mbar-fill" style="width:100%"></div></div></div>
+          <div class="reveal reveal-d1"><div class="mbar-label"><span>Rehabilitation Segment</span><span>USD 580M</span></div><div class="mbar-track"><div class="mbar-fill mbar-fill-2" style="width:65%"></div></div></div>
+          <div class="reveal reveal-d2"><div class="mbar-label"><span>AI-Guided Home Rehab (SAM)</span><span>USD 120M</span></div><div class="mbar-track"><div class="mbar-fill mbar-fill-3" style="width:35%"></div></div></div>
+        </div>
+        <div style="margin-top:2.5rem;" class="reveal reveal-d3">
+          <div style="font-size:15px;font-weight:600;margin-bottom:1.25rem;color:var(--white-dim)">Kompetitor Landscape</div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;font-size:12px;font-family:var(--font-mono);border-collapse:collapse;min-width:280px;">
+              <thead><tr style="color:var(--text-muted);border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px 0;">Produk</th><th style="text-align:center;padding:8px 0;">AI Pose</th><th style="text-align:center;padding:8px 0;">Bahasa ID</th><th style="text-align:center;padding:8px 0;">Harga</th></tr></thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 0;color:var(--blue);font-weight:700;">MotionMate 🏆</td><td style="text-align:center;color:var(--blue);">✓</td><td style="text-align:center;color:var(--blue);">✓</td><td style="text-align:center;color:var(--blue);">IDR 49K</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 0;color:var(--text-sub);">Kaia Health</td><td style="text-align:center;color:var(--text-sub);">✓</td><td style="text-align:center;color:var(--text-muted);">✗</td><td style="text-align:center;color:var(--text-sub);">USD 29/mo</td></tr>
+                <tr><td style="padding:8px 0;color:var(--text-sub);">Manual Video Apps</td><td style="text-align:center;color:var(--text-muted);">✗</td><td style="text-align:center;color:var(--text-muted);">Partial</td><td style="text-align:center;color:var(--text-sub);">Free</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:1.5rem;color:var(--white-dim)" class="reveal">Revenue Model — Funnel</div>
+        <div class="market-funnel reveal reveal-d1">
+          <div class="funnel-step"><div><div class="funnel-label">Total Pasien Rehab/Tahun</div><div class="funnel-sub">Indonesia, 2025</div></div><div class="funnel-value">15M</div></div>
+          <div class="funnel-step"><div><div class="funnel-label">Digital-Savvy (Target)</div><div class="funnel-sub">Smartphone users, urban</div></div><div class="funnel-value">3M</div></div>
+          <div class="funnel-step"><div><div class="funnel-label">Reachable in Yr 1</div><div class="funnel-sub">SOM with viral + B2B</div></div><div class="funnel-value">50K</div></div>
+          <div class="funnel-step" style="border-color:var(--border-accent)"><div><div class="funnel-label">Premium Conversion (5%)</div><div class="funnel-sub" style="color:var(--blue)">@ IDR 49K/bulan</div></div><div class="funnel-value" style="font-size:1.3rem;">Rp 2.45B</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<section class="quote-section">
+  <div class="section-tag reveal" style="justify-content:center;">Vision</div>
+  <div class="quote-giant reveal reveal-d1">"Kami percaya bahwa panduan fisioterapi yang berkualitas <strong>seharusnya tidak menjadi privilese</strong> orang-orang yang tinggal dekat klinik atau bisa membayar mahal. Dengan AI, <span class="accent">kami membawa fisioterapis ke dalam rumah setiap orang.</span>"</div>
+  <div class="quote-source reveal reveal-d2">— Team Catalyst, Universitas Airlangga · NVC 2026</div>
+</section>
+
+<!-- ROADMAP -->
+<section class="section roadmap-section" id="roadmap">
+  <div class="section-inner">
+    <div class="section-tag reveal">Product Roadmap</div>
+    <h2 class="section-title reveal reveal-d1">Dari MVP menuju <span class="accent">platform regional</span></h2>
+    <div class="roadmap-cards">
+      <div class="roadmap-card reveal"><div class="roadmap-phase">Phase 1 · Q1 2026</div><div class="roadmap-title">MVP Launch</div><ul class="roadmap-items"><li class="done">User authentication & profile</li><li class="done">Exercise library (5 kategori)</li><li class="done">Manual session tracking</li><li class="done">Progress dashboard</li><li class="done">Session history & pagination</li></ul><span class="roadmap-status done">✓ Completed</span></div>
+      <div class="roadmap-card reveal reveal-d1"><div class="roadmap-phase">Phase 2 · Q2 2026</div><div class="roadmap-title">AI Pose Detection</div><ul class="roadmap-items"><li>MediaPipe WebAssembly integration</li><li>Real-time posture feedback</li><li>Accuracy scoring otomatis</li><li>33-landmark body tracking</li></ul><span class="roadmap-status active">In Development</span></div>
+      <div class="roadmap-card reveal reveal-d2"><div class="roadmap-phase">Phase 3 · Q3 2026</div><div class="roadmap-title">Physio & Clinic Platform</div><ul class="roadmap-items"><li>Physio-assigned protocols</li><li>B2B clinic dashboard</li><li>Patient monitoring remote</li><li>White-label option</li></ul><span class="roadmap-status upcoming">Upcoming</span></div>
+      <div class="roadmap-card reveal reveal-d3"><div class="roadmap-phase">Phase 4 · Q4 2026</div><div class="roadmap-title">Scale & ASEAN Expansion</div><ul class="roadmap-items"><li>Integrasi BPJS Kesehatan</li><li>Lokalisasi Malaysia & Thailand</li><li>Mobile app (iOS & Android)</li><li>Series A fundraising</li></ul><span class="roadmap-status upcoming">Upcoming</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section pricing-section" id="pricing">
+  <div class="section-inner">
+    <div class="section-tag reveal">Pricing</div>
+    <h2 class="section-title reveal reveal-d1">Harga yang <span class="accent">transparan & adil</span></h2>
+    <p class="section-sub reveal reveal-d2">Mulai gratis. Upgrade kapan saja. Batalkan kapan saja.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card reveal">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-price"><span class="pricing-amount">IDR 0</span><span class="pricing-period">/ bulan</span></div>
+        <div class="pricing-desc">3 sesi terpandu per bulan. Sempurna untuk mencoba dan memulai perjalanan pemulihan Anda.</div>
+        <ul class="pricing-features"><li><span class="check">✓</span>3 sesi per bulan</li><li><span class="check">✓</span>Akses library latihan</li><li><span class="check">✓</span>Tracking reps & timer manual</li><li><span class="check">✓</span>Basic progress dashboard</li><li><span class="x">✗</span>Analitik mendalam</li><li><span class="x">✗</span>AI pose feedback</li></ul>
+        <a href="{{ url_for('auth.register') }}" class="btn-ghost" style="width:100%;justify-content:center;">Mulai Gratis</a>
+      </div>
+      <div class="pricing-card pricing-card--featured reveal reveal-d1">
+        <div class="pricing-best">Paling Populer</div>
+        <div class="pricing-tier">Premium</div>
+        <div class="pricing-price"><span class="pricing-amount" style="color:var(--blue)">IDR 49K</span><span class="pricing-period">/ bulan</span></div>
+        <div class="pricing-desc">Sesi tanpa batas, analytics penuh, dan program yang ditetapkan fisioterapis.</div>
+        <ul class="pricing-features"><li><span class="check">✓</span>Sesi tanpa batas</li><li><span class="check">✓</span>Full analytics dashboard</li><li><span class="check">✓</span>AI pose detection (saat tersedia)</li><li><span class="check">✓</span>Physio-assigned protocols</li><li><span class="check">✓</span>Milestone tracking pemulihan</li><li><span class="check">✓</span>IDR 449K jika tahunan (hemat 24%)</li></ul>
+        <a href="{{ url_for('auth.register') }}" class="btn-primary" style="width:100%;justify-content:center;">Mulai Premium</a>
+      </div>
+      <div class="pricing-card reveal reveal-d2">
+        <div class="pricing-tier">Klinik — B2B</div>
+        <div class="pricing-price"><span class="pricing-amount">IDR 299K</span><span class="pricing-period">/ klinik / bulan</span></div>
+        <div class="pricing-desc">White-label platform untuk follow-up care pasien di skala besar.</div>
+        <ul class="pricing-features"><li><span class="check">✓</span>Dashboard monitoring pasien</li><li><span class="check">✓</span>Laporan aktivitas rehabilitasi</li><li><span class="check">✓</span>Tracking progress pemulihan</li><li><span class="check">✓</span>Unlimited patients</li><li><span class="check">✓</span>Dedicated support</li></ul>
+        <a href="mailto:hello@motionmate.id" class="btn-ghost" style="width:100%;justify-content:center;">Hubungi Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section class="section team-section" id="team">
+  <div class="section-inner">
+    <div class="section-tag reveal">The Team</div>
+    <h2 class="section-title reveal reveal-d1">Dibangun oleh <span class="accent">Team Catalyst</span></h2>
+    <p class="section-sub reveal reveal-d2">Mahasiswa Universitas Airlangga yang bersemangat memecahkan masalah kesehatan nyata di Indonesia menggunakan teknologi.</p>
+    <div class="team-grid">
+
+      <!-- CEO -->
+      <div class="team-card reveal">
+        <div class="team-photo">
+          <img src="{{ url_for('static', filename='assets/chris.jpeg') }}"
+               alt="Christian Matthew Sutanto"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+          <div class="team-photo-fallback" style="display:none">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="30" r="18" fill="rgba(24,184,214,0.15)" stroke="rgba(24,184,214,0.4)" stroke-width="1.5"/>
+              <ellipse cx="40" cy="70" rx="28" ry="16" fill="rgba(24,184,214,0.08)" stroke="rgba(24,184,214,0.3)" stroke-width="1.5"/>
+              <circle cx="40" cy="30" r="10" fill="rgba(24,184,214,0.25)"/>
+            </svg>
+          </div>
+          <div class="team-photo-overlay"></div>
+        </div>
+        <div class="team-info">
+          <div class="team-name">Christian Matthew Sutanto</div>
+          <div class="team-role">Chief Executive Officer</div>
+          <div class="team-bio">Visionary leader driving MotionMate's strategic direction. Berpengalaman dalam product development dan healthcare innovation, Christian memimpin misi membawa rehabilitasi berkualitas ke tangan setiap orang Indonesia.</div>
+        </div>
+      </div>
+
+      <!-- CTO -->
+      <div class="team-card reveal reveal-d1">
+        <div class="team-photo">
+          <img src="{{ url_for('static', filename='assets/evan.png') }}"
+               alt="Evan William"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+          <div class="team-photo-fallback" style="display:none">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="30" r="18" fill="rgba(24,184,214,0.15)" stroke="rgba(24,184,214,0.4)" stroke-width="1.5"/>
+              <ellipse cx="40" cy="70" rx="28" ry="16" fill="rgba(24,184,214,0.08)" stroke="rgba(24,184,214,0.3)" stroke-width="1.5"/>
+              <circle cx="40" cy="30" r="10" fill="rgba(24,184,214,0.25)"/>
+            </svg>
+          </div>
+          <div class="team-photo-overlay"></div>
+        </div>
+        <div class="team-info">
+          <div class="team-name">Evan William</div>
+          <div class="team-role">Chief Technology Officer</div>
+          <div class="team-bio">Full-stack engineer dengan keahlian mendalam di AI dan computer vision. Evan membangun arsitektur backend Flask, merancang pose detection pipeline berbasis MediaPipe, dan memimpin seluruh roadmap teknologi MotionMate.</div>
+        </div>
+      </div>
+
+      <!-- CFO -->
+      <div class="team-card reveal reveal-d2">
+        <div class="team-photo">
+          <img src="{{ url_for('static', filename='assets/izar.png') }}"
+               alt="Izar Alfatih"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+          <div class="team-photo-fallback" style="display:none">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="30" r="18" fill="rgba(24,184,214,0.15)" stroke="rgba(24,184,214,0.4)" stroke-width="1.5"/>
+              <ellipse cx="40" cy="70" rx="28" ry="16" fill="rgba(24,184,214,0.08)" stroke="rgba(24,184,214,0.3)" stroke-width="1.5"/>
+              <circle cx="40" cy="30" r="10" fill="rgba(24,184,214,0.25)"/>
+            </svg>
+          </div>
+          <div class="team-photo-overlay"></div>
+        </div>
+        <div class="team-info">
+          <div class="team-name">Izar Alfatih</div>
+          <div class="team-role">Chief Financial Officer</div>
+          <div class="team-bio">Ahli strategi keuangan dan pengembangan bisnis. Izar mengelola financial planning, investor relations, dan kemitraan strategis — memastikan MotionMate tumbuh secara berkelanjutan menuju pasar ASEAN.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="cta-label reveal">Mulai Hari Ini</div>
+    <h2 class="cta-title reveal reveal-d1">Pulih lebih cepat.<br><span class="accent">Bergerak lebih benar.</span></h2>
+    <p class="cta-sub reveal reveal-d2">Bergabunglah dengan ribuan pasien yang telah mempercayakan program rehabilitasi rumahan mereka kepada MotionMate.</p>
+    <div class="cta-buttons reveal reveal-d3">
+      {% if authenticated %}
+        <a href="{{ url_for('dashboard.index') }}" class="btn-primary" style="font-size:16px;padding:15px 36px;">Go to Dashboard <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      {% elif dummy_mode %}
+        <a href="{{ url_for('dashboard.index') }}" class="btn-primary" style="font-size:16px;padding:15px 36px;">🎭 Continue Demo</a>
+        <a href="{{ url_for('main.disable_dummy') }}" class="btn-ghost" style="font-size:16px;padding:15px 36px;">Exit Demo Mode</a>
+      {% else %}
+        <a href="{{ url_for('auth.register') }}" class="btn-primary" style="font-size:16px;padding:15px 36px;">Daftar Gratis Sekarang <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="{{ url_for('main.enable_dummy') }}" class="btn-ghost" style="font-size:16px;padding:15px 36px;">Explore with Dummy Data</a>
+      {% endif %}
+    </div>
+    <div class="cta-note reveal">Gratis selamanya · Tidak perlu kartu kredit · Setup dalam 2 menit</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <a href="{{ url_for('main.index') }}" class="footer-logo"><span class="footer-logo-mark">M</span><span style="font-weight:700;font-size:15px;">MotionMate</span></a>
+        <div class="footer-tagline">Platform rehabilitasi rumahan berbasis AI yang membuat panduan fisioterapi berkualitas bisa diakses semua orang Indonesia.</div>
+        <div style="margin-top:1.25rem;display:flex;gap:8px;"><a href="mailto:hello@motionmate.id" class="social-btn">✉</a><a href="#" class="social-btn">in</a><a href="#" class="social-btn">gh</a></div>
+      </div>
+      <div><div class="footer-col-title">Platform</div><ul class="footer-links"><li><a href="#how">Cara Kerja</a></li><li><a href="#features">Fitur</a></li><li><a href="#pricing">Harga</a></li></ul></div>
+      <div><div class="footer-col-title">Perusahaan</div><ul class="footer-links"><li><a href="#team">Tim</a></li><li><a href="#roadmap">Roadmap</a></li><li><a href="mailto:hello@motionmate.id">Kontak</a></li></ul></div>
+      <div><div class="footer-col-title">Legal</div><ul class="footer-links"><li><a href="#">Privasi</a></li><li><a href="#">Syarat & Ketentuan</a></li><li><a href="#">Kebijakan Cookie</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 MotionMate · Team Catalyst, Universitas Airlangga · NVC 2026</div>
+      <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;background:var(--blue);border-radius:50%;box-shadow:0 0 8px var(--blue);"></span><span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);">motionmate.id</span></div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Cursor glow
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', e => { glow.style.left = e.clientX+'px'; glow.style.top = e.clientY+'px'; });
+
+  // Nav scroll
+  const nav = document.getElementById('mainNav');
+  window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 60); });
+
+  // Mobile nav toggle
+  const mobileToggle = document.getElementById('mobileToggle');
+  const mobileNav = document.getElementById('mobileNav');
+  mobileToggle.addEventListener('click', () => { mobileNav.classList.toggle('open'); mobileToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰'; });
+  mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { mobileNav.classList.remove('open'); mobileToggle.textContent = '☰'; }));
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => { entries.forEach(el => { if(el.isIntersecting) el.target.classList.add('visible'); }); }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Auto-dismiss flashes
+  document.querySelectorAll('.flash').forEach(el => { setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(-8px)'; el.style.transition='all 0.4s ease'; setTimeout(()=>el.remove(),400); }, 4000); });
+</script>
+</body>
+</html>

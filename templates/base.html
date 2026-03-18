@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MotionMate{% endblock %} — AI Rehabilitation</title>
+  <!-- MotionMate Icons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <!-- / Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#04090f; --bg-2:#070e17; --bg-3:#0b1520; --bg-card:#08111c;
+      --border:rgba(24,184,214,0.08); --border-accent:rgba(24,184,214,0.35);
+      --blue:#18B8D6; --blue-dim:rgba(24,184,214,0.10); --blue-glow:rgba(24,184,214,0.28);
+      --blue-bright:#36d4ef; --blue-dark:#0d7a90;
+      --white:#eef4f8; --text-muted:#4a6375; --text-sub:#7a97ab;
+      --danger:#ff4f5e; --warning:#f59e0b; --success:#22c55e;
+      --radius:10px; --radius-lg:16px; --radius-xl:24px;
+      --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace;
+      --nav-h:68px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% block content %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>
