@@ -10,6 +10,7 @@ from .routes.auth import auth_bp
 from .routes.dashboard import dashboard_bp
 from .routes.exercises import exercises_bp
 from .routes.sessions import sessions_bp
+from .routes.games import games_bp
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -25,5 +26,6 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
     app.register_blueprint(exercises_bp, url_prefix="/exercises")
     app.register_blueprint(sessions_bp, url_prefix="/sessions")
+    app.register_blueprint(games_bp, url_prefix="/games")
 
     return app

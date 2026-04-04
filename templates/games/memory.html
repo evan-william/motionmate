@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Pelatihan Memori , MotionMate</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#F4FAFD; --bg-card:#FFFFFF; --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-bright:#17C5E0; --white:#081C2B; --text-muted:#4A789A; --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{font-size:16px} body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh}
+    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;display:flex;justify-content:center}
+    .game-container{background:var(--bg-card);border:2px solid var(--border-accent);border-radius:24px;padding:2rem;max-width:500px;width:100%;box-shadow:0 12px 40px rgba(11,155,188,0.1)}
+    .header{text-align:center;margin-bottom:1.5rem}
+    .title{font-size:2rem;font-weight:800;color:var(--blue);margin-bottom:5px}
+    .info-bar{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:14px;color:var(--text-muted);font-weight:700;margin-bottom:1.5rem;padding:10px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+    .controls{display:flex;gap:10px;margin-bottom:1.5rem;justify-content:center}
+    select, button{padding:10px 15px;font-family:var(--font-body);font-size:14px;font-weight:700;border-radius:8px;border:1px solid var(--border-accent);outline:none}
+    button{background:var(--blue);color:#fff;cursor:pointer;border:none}
+    button:hover{background:var(--blue-bright)}
+    button:disabled{opacity:0.5;cursor:not-allowed}
+    .grid{display:grid;gap:10px;margin:0 auto;justify-content:center}
+    .box{background:#e2e8f0;border-radius:10px;cursor:pointer;transition:background 0.1s, transform 0.1s;border:2px solid transparent}
+    .box:active{transform:scale(0.95)}
+    .box.glow{background:var(--blue-bright);border-color:var(--blue);box-shadow:0 0 15px var(--blue-bright)}
+    .box.correct{background:#22c55e;border-color:#16a34a;box-shadow:0 0 15px #22c55e}
+    .box.wrong{background:#ef4444;border-color:#dc2626;box-shadow:0 0 15px #ef4444}
+    .status-msg{text-align:center;font-weight:800;font-size:1.2rem;margin-top:1.5rem;min-height:30px;color:var(--blue)}
+  </style>
+</head>
+<body>
+  {% include 'partials/nav.html' %}
+  <div class="page">
+    <div class="game-container">
+      <div class="header">
+        <div class="title">Game Memori</div>
+        <p style="font-size:13px;color:var(--text-muted)">Ikuti pola nyala lampu secara berurutan.</p>
+      </div>
+      <div class="controls">
+        <select id="diffSelect">
+          <option value="easy">Easy (3x3)</option>
+          <option value="medium">Medium (4x3)</option>
+          <option value="hard">Hard (4x4)</option>
+        </select>
+        <button id="startBtn" onclick="startGame()">Mulai Game</button>
+      </div>
+      <div class="info-bar">
+        <span>Round: <span id="roundDisp">1 / 10</span></span>
+        <span>Score: <span id="scoreDisp">0</span></span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="status-msg" id="statusMsg">Siap bermain?</div>
+    </div>
+  </div>
+
+  <script>
+    const gridEl = document.getElementById('grid');
+    const diffSelect = document.getElementById('diffSelect');
+    const startBtn = document.getElementById('startBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const scoreDisp = document.getElementById('scoreDisp');
+    const roundDisp = document.getElementById('roundDisp');
+
+    let sequence = [];
+    let userSequence = [];
+    let round = 1;
+    let score = 0;
+    let isUserTurn = false;
+    let boxes = [];
+    const MAX_ROUNDS = 10;
+
+    const diffConfigs = {
+      easy: { cols: 3, rows: 3, size: '80px' },
+      medium: { cols: 4, rows: 3, size: '70px' },
+      hard: { cols: 4, rows: 4, size: '65px' }
+    };
+
+    function buildGrid(diff) {
+      gridEl.innerHTML = '';
+      const conf = diffConfigs[diff];
+      const total = conf.cols * conf.rows;
+      gridEl.style.gridTemplateColumns = `repeat(${conf.cols}, ${conf.size})`;
+      gridEl.style.gridTemplateRows = `repeat(${conf.rows}, ${conf.size})`;
+      boxes = [];
+
+      for(let i=0; i<total; i++) {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.dataset.id = i;
+        box.onclick = () => handleBoxClick(i);
+        gridEl.appendChild(box);
+        boxes.push(box);
+      }
+    }
+
+    diffSelect.onchange = () => { if(!startBtn.disabled) buildGrid(diffSelect.value); };
+    buildGrid('easy');
+
+    async function startGame() {
+      startBtn.disabled = true;
+      diffSelect.disabled = true;
+      round = 1; score = 0; sequence = [];
+      updateDisplay();
+      await playRound();
+    }
+
+    async function playRound() {
+      userSequence = [];
+      isUserTurn = false;
+      statusMsg.textContent = 'Perhatikan Pola...';
+      statusMsg.style.color = 'var(--text-muted)';
+      updateDisplay();
+      
+      const totalBoxes = boxes.length;
+      sequence.push(Math.floor(Math.random() * totalBoxes));
+      
+      await sleep(800);
+      for(let i=0; i<sequence.length; i++) {
+        await flashBox(sequence[i], 'glow', 500);
+        await sleep(200);
+      }
+      
+      statusMsg.textContent = 'Giliran Anda!';
+      statusMsg.style.color = 'var(--blue)';
+      isUserTurn = true;
+    }
+
+    async function handleBoxClick(id) {
+      if(!isUserTurn) return;
+      userSequence.push(id);
+      const currentIndex = userSequence.length - 1;
+
+      if(userSequence[currentIndex] !== sequence[currentIndex]) {
+        isUserTurn = false;
+        await flashBox(id, 'wrong', 500);
+        endGame(false);
+        return;
+      }
+
+      await flashBox(id, 'correct', 200);
+      score += 10;
+      updateDisplay();
+
+      if(userSequence.length === sequence.length) {
+        isUserTurn = false;
+        if(round === MAX_ROUNDS) {
+          endGame(true);
+        } else {
+          statusMsg.textContent = 'Bagus!';
+          statusMsg.style.color = '#22c55e';
+          round++;
+          setTimeout(playRound, 1000);
+        }
+      }
+    }
+
+    function flashBox(id, className, ms) {
+      return new Promise(resolve => {
+        boxes[id].classList.add(className);
+        setTimeout(() => {
+          boxes[id].classList.remove(className);
+          resolve();
+        }, ms);
+      });
+    }
+
+    function updateDisplay() {
+      roundDisp.textContent = `${round} / ${MAX_ROUNDS}`;
+      scoreDisp.textContent = score;
+    }
+
+    async function endGame(win) {
+      statusMsg.textContent = win ? `Luar Biasa! Skor akhir: ${score}` : `Game Over! Skor akhir: ${score}`;
+      statusMsg.style.color = win ? '#22c55e' : '#ef4444';
+      
+      try {
+        await fetch('{{ url_for("games.save") }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            game_type: 'memory',
+            difficulty: diffSelect.value,
+            score: score,
+            max_score: (MAX_ROUNDS * (MAX_ROUNDS+1) / 2) * 10
+          })
+        });
+      } catch(e) { console.log("Save error", e); }
+
+      startBtn.disabled = false;
+      diffSelect.disabled = false;
+      startBtn.textContent = 'Main Lagi';
+    }
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+  </script>
+</body>
+</html>

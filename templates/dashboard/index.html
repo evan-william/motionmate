@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Dashboard — MotionMate</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
@@ -10,128 +11,219 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#F4FAFD;--bg-2:#FFFFFF;--bg-3:#E4F2F8;--bg-card:#FFFFFF;
-      --border:rgba(11,155,188,0.16);--border-accent:rgba(11,155,188,0.40);
-      --blue:#0B9BBC;--blue-dim:rgba(11,155,188,0.09);--blue-glow:rgba(11,155,188,0.18);
-      --blue-bright:#17C5E0;--blue-dark:#087A95;
-      --white:#081C2B;--white-dim:rgba(8,28,43,0.72);
-      --text-muted:#4A789A;--text-sub:#1A506A;
-      --danger:#ff4f5e;--warning:#b45309;--success:#15803d;
-      --radius:10px;--radius-lg:16px;--radius-xl:24px;
-      --font-body:'Outfit',sans-serif;--font-mono:'JetBrains Mono',monospace;--nav-h:68px;
+    :root {
+      --bg:#F4FAFD; --bg-2:#FFFFFF; --bg-3:#E4F2F8; --bg-card:#FFFFFF;
+      --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40);
+      --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-glow:rgba(11,155,188,0.18);
+      --blue-bright:#17C5E0; --blue-dark:#087A95;
+      --white:#081C2B; --white-dim:rgba(8,28,43,0.72);
+      --text-muted:#4A789A; --text-sub:#1A506A;
+      --danger:#ff4f5e; --warning:#b45309; --success:#15803d;
+      --radius:10px; --radius-lg:16px; --radius-xl:24px;
+      --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace;
+      --nav-h:64px;
     }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.06;pointer-events:none;z-index:0}
-    /* NAV */
-    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;background:rgba(244,250,253,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-    .nav__brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--white)}
-    .nav__logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:14px;border-radius:8px;box-shadow:0 0 18px var(--blue-glow)}
-    .nav__logo-text{font-weight:700;font-size:16px;letter-spacing:-0.3px;color:var(--white)}
-    .nav__links{display:flex;align-items:center;gap:4px}
-    .nav__link{color:var(--text-sub);text-decoration:none;font-size:14px;font-weight:500;padding:7px 14px;border-radius:7px;transition:all .2s}
-    .nav__link:hover{color:var(--blue);background:rgba(11,155,188,0.08)}
-    .nav__link--active{color:var(--blue);font-weight:700}
-    .nav__mobile-toggle{display:none;background:none;border:2px solid var(--border);color:var(--text-sub);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:18px;}
-    .mobile-nav{display:none;position:fixed;top:var(--nav-h);left:0;right:0;background:rgba(244,250,253,0.99);border-bottom:1px solid var(--border-accent);padding:1.5rem 2rem;flex-direction:column;gap:8px;z-index:99;backdrop-filter:blur(20px);}
-    .mobile-nav.open{display:flex;}
-    .mobile-nav a{color:var(--text-sub);text-decoration:none;font-size:15px;padding:10px 14px;border-radius:8px;transition:all .2s;}
-    .mobile-nav a:hover{color:var(--blue);background:rgba(11,155,188,0.08);}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg); color: var(--white);
+      font-family: var(--font-body); min-height: 100vh;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: .06; pointer-events: none; z-index: 0;
+    }
+
     /* PAGE */
-    .page{padding-top:calc(var(--nav-h) + 2.5rem);padding-bottom:4rem;position:relative;z-index:2}
-    .inner{max-width:1200px;margin:0 auto;padding:0 2.5rem}
-    .page-header{margin-bottom:2.5rem;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem}
-    .page-header-tag{font-size:11px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
-    .page-header-title{font-size:2.1rem;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--white)}
-    .page-header-sub{font-size:14px;color:var(--text-muted);margin-top:6px}
-    .btn-sm{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;font-family:var(--font-body);font-weight:700;font-size:13px;padding:10px 20px;border-radius:var(--radius);text-decoration:none;border:none;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(11,155,188,.25)}
-    .btn-sm:hover{background:var(--blue-bright);box-shadow:0 6px 20px rgba(11,155,188,.35)}
-    /* STATS */
-    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
-    .stat-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.35rem 1.5rem;position:relative;overflow:hidden;transition:all .3s;cursor:default;box-shadow:0 2px 8px rgba(11,155,188,0.06)}
-    .stat-box:hover{border-color:var(--border-accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(11,155,188,0.12)}
-    .stat-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),transparent)}
-    .stat-box__icon{width:38px;height:38px;background:var(--blue-dim);border:1px solid var(--border-accent);border-radius:9px;display:grid;place-items:center;font-size:17px;margin-bottom:12px}
-    .stat-box__label{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600}
-    .stat-box__value{font-size:2.1rem;font-weight:800;font-family:var(--font-mono);color:var(--white);letter-spacing:-1.5px}
-    .stat-box__trend{font-size:12px;margin-top:4px;color:var(--blue);font-family:var(--font-mono);font-weight:600}
-    .stat-box__trend.warn{color:var(--warning)}
-    /* MAIN GRID */
-    .main-grid{display:grid;grid-template-columns:2fr 1fr;gap:1.5rem}
-    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 2px 8px rgba(11,155,188,0.05)}
-    .card__header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(11,155,188,0.03)}
-    .card__title{font-size:14px;font-weight:700;color:var(--white)}
-    .card__action{font-size:12px;color:var(--blue);text-decoration:none;font-family:var(--font-mono);font-weight:600;transition:color .2s}
-    .card__action:hover{color:var(--blue-dark)}
-    .card__body{padding:1.25rem 1.5rem}
-    /* SESSION LIST */
-    .session-list{list-style:none;display:flex;flex-direction:column;gap:8px}
-    .session-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);transition:all .25s;cursor:default}
-    .session-item:hover{border-color:var(--border-accent);transform:translateX(4px);background:#fff}
-    .session-item__icon{width:40px;height:40px;background:var(--blue-dim);border-radius:9px;display:grid;place-items:center;color:var(--blue);flex-shrink:0;font-size:16px;border:1px solid var(--border-accent)}
-    .session-item__name{font-size:14px;font-weight:700;color:var(--white)}
-    .session-item__meta{font-size:12px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px}
-    .session-item__right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-    .session-score{font-size:15px;font-family:var(--font-mono);color:var(--blue);font-weight:800}
-    .badge{display:inline-flex;align-items:center;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;padding:3px 9px;border-radius:4px;font-weight:700}
-    .badge--success{background:rgba(21,128,61,.10);color:#15803d;border:1px solid rgba(21,128,61,.25)}
-    .badge--warning{background:rgba(180,83,9,.10);color:#b45309;border:1px solid rgba(180,83,9,.25)}
-    .badge--muted{background:rgba(11,155,188,.08);color:var(--text-muted);border:1px solid var(--border)}
-    .badge--blue{background:var(--blue-dim);color:var(--blue);border:1px solid var(--border-accent)}
-    /* WEEK BARS */
-    .week-bars{display:flex;align-items:flex-end;gap:6px;height:80px;margin:1rem 0}
-    .week-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
-    .week-bar{width:100%;border-radius:4px 4px 0 0;background:var(--blue-dim);border:1px solid var(--border-accent);transition:height .3s;min-height:4px;position:relative;overflow:hidden}
-    .week-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,var(--blue),var(--blue-dark));opacity:.85}
-    .week-bar-label{font-size:9px;font-family:var(--font-mono);color:var(--text-muted);text-align:center;font-weight:600}
-    /* ACCURACY RING */
-    .accuracy-ring-wrap{display:flex;align-items:center;justify-content:center;gap:1.5rem;padding:1rem 0}
-    .ring-svg{transform:rotate(-90deg)}
-    .ring-track{fill:none;stroke:var(--bg-3);stroke-width:8}
-    .ring-fill{fill:none;stroke:var(--blue);stroke-width:8;stroke-linecap:round;stroke-dasharray:251;stroke-dashoffset:251;animation:ringAnim 1.8s ease forwards .3s;filter:drop-shadow(0 0 5px var(--blue-glow))}
-    @keyframes ringAnim{to{stroke-dashoffset:51}}
-    .ring-info-val{font-size:2.4rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);letter-spacing:-1.5px}
-    .ring-info-label{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;font-weight:600}
-    /* PLAN CARD */
-    .plan-card{background:linear-gradient(135deg,rgba(11,155,188,0.08),var(--bg-card));border:2px solid var(--border-accent);border-radius:var(--radius-lg);padding:1.5rem;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(11,155,188,0.10)}
-    .plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),transparent)}
-    .plan-title{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--white)}
-    .plan-sub{font-size:12px;color:var(--text-muted);margin-bottom:1.25rem;font-weight:500}
-    .plan-progress-wrap{background:var(--bg-3);border-radius:4px;height:7px;overflow:hidden;margin-bottom:6px}
-    .plan-progress-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--blue-bright));animation:growBar 1.5s ease forwards}
-    @keyframes growBar{from{width:0}}
-    .plan-progress-foot{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);font-weight:600}
-    /* QUICK ACTIONS */
-    .quick-actions{display:flex;flex-direction:column;gap:8px;margin-top:.75rem}
-    .btn-full{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:all .25s}
-    .btn-full-primary{background:var(--blue);color:#fff;box-shadow:0 4px 16px rgba(11,155,188,.25)}
-    .btn-full-primary:hover{background:var(--blue-bright);box-shadow:0 6px 24px rgba(11,155,188,.40)}
-    .btn-full-ghost{background:transparent;color:var(--text-sub);border:2px solid var(--border)}
-    .btn-full-ghost:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
-    /* UPCOMING */
-    .upcoming-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-    .upcoming-item:last-child{border-bottom:none}
-    .upcoming-dot{width:9px;height:9px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:5px;box-shadow:0 0 6px var(--blue-glow)}
-    .upcoming-name{font-size:14px;font-weight:700;margin-bottom:2px;color:var(--white)}
-    .upcoming-time{font-size:12px;color:var(--text-muted);font-family:var(--font-mono);font-weight:500}
-    /* EMPTY STATE */
-    .empty-state{text-align:center;padding:3rem 2rem;color:var(--text-muted)}
-    .empty-icon{font-size:3rem;opacity:.3;margin-bottom:1rem}
-    .empty-title{font-size:15px;font-weight:700;color:var(--text-sub);margin-bottom:.5rem}
+    .page { padding-top: calc(var(--nav-h) + 2rem); padding-bottom: 4rem; position: relative; z-index: 2; }
+    .inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* PAGE HEADER */
+    .page-header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
+    .page-header-tag { font-size: 10px; font-family: var(--font-mono); color: var(--blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: 700; }
+    .page-header-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 800; letter-spacing: -0.8px; line-height: 1.1; color: var(--white); }
+    .page-header-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; }
+
+    /* BUTTON */
+    .btn-sm {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--blue); color: #fff;
+      font-family: var(--font-body); font-weight: 700; font-size: 13px;
+      padding: 10px 18px; border-radius: var(--radius);
+      text-decoration: none; border: none; cursor: pointer;
+      transition: all .2s; box-shadow: 0 4px 14px rgba(11,155,188,.25);
+      white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-sm:hover { background: var(--blue-bright); }
+    .btn-sm:active { transform: scale(0.97); }
+
     /* DUMMY BANNER */
-    .dummy-banner{background:rgba(180,83,9,0.08);border:1px solid rgba(180,83,9,0.25);border-radius:var(--radius-lg);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:12px;font-size:13px;color:#b45309;font-family:var(--font-mono);font-weight:600;}
+    .dummy-banner {
+      background: rgba(180,83,9,0.07); border: 1px solid rgba(180,83,9,0.22);
+      border-radius: var(--radius-lg); padding: .9rem 1.25rem;
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: #b45309; font-family: var(--font-mono); font-weight: 700;
+      flex-wrap: wrap;
+    }
+    .dummy-banner a { color: var(--blue); margin-left: 6px; font-weight: 700; text-decoration: none; }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .875rem; margin-bottom: 1.5rem; }
+    .stat-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem;
+      position: relative; overflow: hidden;
+      transition: all .3s; cursor: default;
+      box-shadow: 0 2px 8px rgba(11,155,188,0.05);
+    }
+    .stat-box:hover { border-color: var(--border-accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(11,155,188,0.10); }
+    .stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), transparent); }
+    .stat-box__icon {
+      width: 36px; height: 36px; background: var(--blue-dim);
+      border: 1px solid var(--border-accent); border-radius: 9px;
+      display: grid; place-items: center; font-size: 15px; color: var(--blue);
+      margin-bottom: 10px;
+    }
+    .stat-box__label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 600; }
+    .stat-box__value { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; font-family: var(--font-mono); color: var(--white); letter-spacing: -1px; line-height: 1; }
+    .stat-box__trend { font-size: 11px; margin-top: 4px; color: var(--blue); font-family: var(--font-mono); font-weight: 600; }
+    .stat-box__trend.warn { color: var(--warning); }
+
+    /* MAIN GRID */
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; }
+
+    /* CARD */
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 2px 8px rgba(11,155,188,0.04); }
+    .card__header { padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(11,155,188,0.02); }
+    .card__title { font-size: 13px; font-weight: 700; color: var(--white); }
+    .card__action { font-size: 11px; color: var(--blue); text-decoration: none; font-family: var(--font-mono); font-weight: 600; transition: color .2s; white-space: nowrap; }
+    .card__action:hover { color: var(--blue-dark); }
+    .card__body { padding: 1.1rem 1.35rem; }
+
+    /* SESSION LIST */
+    .session-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .session-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 11px 13px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      transition: all .25s; cursor: default;
+    }
+    .session-item:hover { border-color: var(--border-accent); transform: translateX(3px); background: #fff; }
+    .session-item__icon {
+      width: 38px; height: 38px; background: var(--blue-dim);
+      border-radius: 9px; display: grid; place-items: center;
+      color: var(--blue); flex-shrink: 0; font-size: 14px;
+      border: 1px solid var(--border-accent);
+    }
+    .session-item__name { font-size: 13px; font-weight: 700; color: var(--white); }
+    .session-item__meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px; }
+    .session-item__right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .session-score { font-size: 14px; font-family: var(--font-mono); color: var(--blue); font-weight: 800; }
+
+    /* BADGE */
+    .badge { display: inline-flex; align-items: center; font-size: 9px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+    .badge--success { background: rgba(21,128,61,.10); color: #15803d; border: 1px solid rgba(21,128,61,.25); }
+    .badge--warning { background: rgba(180,83,9,.10); color: #b45309; border: 1px solid rgba(180,83,9,.25); }
+    .badge--muted { background: rgba(11,155,188,.08); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge--blue { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--border-accent); }
+
+    /* WEEK BARS */
+    .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 72px; margin: .875rem 0; }
+    .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .week-bar {
+      width: 100%; border-radius: 4px 4px 0 0;
+      background: var(--blue-dim); border: 1px solid var(--border-accent);
+      transition: height .3s; min-height: 4px;
+      position: relative; overflow: hidden;
+    }
+    .week-bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, var(--blue), var(--blue-dark)); opacity: .85; }
+    .week-bar-label { font-size: 8px; font-family: var(--font-mono); color: var(--text-muted); text-align: center; font-weight: 600; }
+
+    /* ACCURACY RING */
+    .accuracy-ring-wrap { display: flex; align-items: center; justify-content: center; gap: 1.25rem; padding: .875rem 0; }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: var(--bg-3); stroke-width: 8; }
+    .ring-fill { fill: none; stroke: var(--blue); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251; stroke-dashoffset: 251; animation: ringAnim 1.8s ease forwards .3s; filter: drop-shadow(0 0 5px var(--blue-glow)); }
+    @keyframes ringAnim { to { stroke-dashoffset: 51; } }
+    .ring-info-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); letter-spacing: -1.5px; }
+    .ring-info-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+    /* PLAN CARD */
+    .plan-card {
+      background: linear-gradient(135deg, rgba(11,155,188,0.08), var(--bg-card));
+      border: 2px solid var(--border-accent); border-radius: var(--radius-lg);
+      padding: 1.35rem; position: relative; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(11,155,188,0.08);
+    }
+    .plan-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), transparent); }
+    .plan-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; color: var(--white); }
+    .plan-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 1.1rem; font-weight: 500; }
+    .plan-progress-wrap { background: var(--bg-3); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 5px; }
+    .plan-progress-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); animation: growBar 1.5s ease forwards; }
+    @keyframes growBar { from { width: 0; } }
+    .plan-progress-foot { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
+
+    /* QUICK ACTIONS */
+    .quick-actions { display: flex; flex-direction: column; gap: 7px; margin-top: .75rem; }
+    .btn-full {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px; border-radius: var(--radius);
+      font-family: var(--font-body); font-size: 13px; font-weight: 700;
+      text-decoration: none; border: none; cursor: pointer; transition: all .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-full-primary { background: var(--blue); color: #fff; box-shadow: 0 4px 14px rgba(11,155,188,.22); }
+    .btn-full-primary:hover { background: var(--blue-bright); }
+    .btn-full-primary:active { transform: scale(0.98); }
+    .btn-full-ghost { background: transparent; color: var(--text-sub); border: 2px solid var(--border); }
+    .btn-full-ghost:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
+    .btn-full-ghost:active { transform: scale(0.98); }
+
+    /* UPCOMING */
+    .upcoming-item { display: flex; gap: 11px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .upcoming-item:last-child { border-bottom: none; }
+    .upcoming-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 6px var(--blue-glow); }
+    .upcoming-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--white); }
+    .upcoming-time { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); font-weight: 500; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 2.5rem 1.5rem; color: var(--text-muted); }
+    .empty-icon { font-size: 2.5rem; opacity: .25; margin-bottom: .875rem; }
+    .empty-title { font-size: 14px; font-weight: 700; color: var(--text-sub); margin-bottom: .4rem; }
+
     /* FLASH */
-    .flash-wrap{position:fixed;top:calc(var(--nav-h)+14px);left:50%;transform:translateX(-50%);z-index:300;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:8px;width:90%}
-    .flash{padding:13px 18px;border-radius:var(--radius);font-size:14px;border:1px solid transparent;animation:slideDown .25s ease}
-    .flash--success{background:rgba(11,155,188,.10);border-color:rgba(11,155,188,.3);color:var(--blue)}
-    .flash--danger{background:rgba(255,79,94,.10);border-color:rgba(255,79,94,.3);color:#d9001e}
-    .flash--info{background:rgba(26,86,106,.10);border-color:rgba(26,86,106,.3);color:var(--text-sub)}
-    .flash--warning{background:rgba(180,83,9,.10);border-color:rgba(180,83,9,.3);color:#b45309}
-    @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-    @media(max-width:900px){.stats-row{grid-template-columns:1fr 1fr}.main-grid{grid-template-columns:1fr}}
-    @media(max-width:768px){.nav{padding:0 1.25rem}.nav__links{display:none}.nav__mobile-toggle{display:block}.inner{padding:0 1.25rem}.page-header{flex-direction:column;align-items:flex-start}}
-    @media(max-width:480px){.stats-row{grid-template-columns:1fr 1fr}.stat-box__value{font-size:1.6rem}}
+    .flash-wrap { position: fixed; top: calc(var(--nav-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 300; min-width: 280px; max-width: 480px; display: flex; flex-direction: column; gap: 7px; width: 90%; }
+    .flash { padding: 11px 15px; border-radius: var(--radius); font-size: 13px; border: 1px solid transparent; animation: slideDown .25s ease; }
+    .flash--success { background: rgba(11,155,188,.10); border-color: rgba(11,155,188,.3); color: var(--blue); }
+    .flash--danger { background: rgba(255,79,94,.10); border-color: rgba(255,79,94,.3); color: #d9001e; }
+    .flash--info { background: rgba(26,86,106,.10); border-color: rgba(26,86,106,.3); color: var(--text-sub); }
+    .flash--warning { background: rgba(180,83,9,.10); border-color: rgba(180,83,9,.3); color: #b45309; }
+    @keyframes slideDown { from{ opacity:0; transform:translateY(-10px); } to{ opacity:1; transform:translateY(0); } }
+
+    /* PROGRESS BARS (weekly chart non-dummy) */
+    .prog-row { display: flex; align-items: center; gap: 10px; }
+    .prog-date { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); width: 54px; flex-shrink: 0; font-weight: 600; }
+    .prog-track { flex: 1; height: 7px; background: var(--bg-3); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+    .prog-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); border-radius: 3px; }
+    .prog-pct { font-size: 11px; font-family: var(--font-mono); color: var(--blue); width: 32px; text-align: right; font-weight: 700; }
+
+    /* RESPONSIVE */
+    @media (max-width: 960px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .stat-box { padding: 1rem; }
+      .stat-box__value { font-size: 1.5rem; }
+      .page-header { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 380px) {
+      .stats-row { grid-template-columns: 1fr 1fr; gap: .6rem; }
+      .inner { padding: 0 1rem; }
+    }
   </style>
 </head>
 <body>
@@ -151,76 +243,113 @@
 
       {% if dummy_mode %}
       <div class="dummy-banner">
-        🎭 <strong>Dummy Data Mode</strong> — Data di bawah adalah contoh. <a href="{{ url_for('auth.register') }}" style="color:var(--blue);margin-left:8px;font-weight:700;">Daftar sekarang</a> untuk data nyata.
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <strong>Dummy Data Mode</strong> — Data di bawah adalah contoh.
+        <a href="{{ url_for('auth.register') }}">Daftar sekarang</a> untuk data nyata.
       </div>
       {% endif %}
 
       <div class="page-header">
         <div>
           <div class="page-header-tag">Recovery Overview</div>
-          <h1 class="page-header-title">Halo, {{ user_name }} 👋</h1>
-          <div class="page-header-sub">Ini progres rehabilitasi Anda{% if dummy_mode %} (contoh data){% endif %}.</div>
+          <h1 class="page-header-title">Halo, {{ user_name }}</h1>
+          <div class="page-header-sub">
+            Progres rehabilitasi Anda{% if dummy_mode %} (contoh data){% endif %}.
+          </div>
         </div>
-        <a href="{{ url_for('exercises.index') }}" class="btn-sm">+ Mulai Sesi</a>
+        <a href="{{ url_for('games.hub') }}" class="btn-sm">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Pilih Program Terapi
+        </a>
       </div>
 
-      <!-- Stats -->
       <div class="stats-row">
         <div class="stat-box">
-          <div class="stat-box__icon">🎯</div>
-          <div class="stat-box__label">Total Sesi</div>
+          <div class="stat-box__icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l2 2L11 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stat-box__label">Sesi Motorik</div>
           <div class="stat-box__value">{{ total_sessions }}</div>
-          <div class="stat-box__trend">{% if dummy_mode %}↑ +3 minggu ini{% else %}completed{% endif %}</div>
+          <div class="stat-box__trend">{% if dummy_mode %}+3 minggu ini{% else %}completed{% endif %}</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box__icon">📐</div>
-          <div class="stat-box__label">Avg Akurasi</div>
+          <div class="stat-box__icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stat-box__label">Akurasi Motorik</div>
           <div class="stat-box__value">{{ avg_accuracy }}%</div>
           <div class="stat-box__trend">skor postur</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box__icon">🔥</div>
-          <div class="stat-box__label">Day Streak</div>
-          <div class="stat-box__value">{{ streak }}</div>
-          <div class="stat-box__trend {% if dummy_mode %}warn{% endif %}">{% if dummy_mode %}⚡ personal best{% else %}days in a row{% endif %}</div>
+          <div class="stat-box__icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 12V8M8 12V4M12 12V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="stat-box__label">Akurasi Bicara</div>
+          <div class="stat-box__value">{{ speech_accuracy }}%</div>
+          <div class="stat-box__trend">terapi wicara</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box__icon">💪</div>
-          <div class="stat-box__label">{% if dummy_mode %}Total Reps{% else %}Plan{% endif %}</div>
-          <div class="stat-box__value">{% if dummy_mode %}480{% else %}<span class="badge badge--blue" style="font-size:0.9rem;">Free</span>{% endif %}</div>
-          <div class="stat-box__trend">{% if dummy_mode %}sejak bergabung{% else %}<a href="#" style="color:var(--blue);font-size:11px;font-weight:700;">Upgrade</a>{% endif %}</div>
+          <div class="stat-box__icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v4l3 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <div class="stat-box__label">Day Streak</div>
+          <div class="stat-box__value">{{ streak }}</div>
+          <div class="stat-box__trend {% if dummy_mode %}warn{% endif %}">{% if dummy_mode %}personal best{% else %}days in a row{% endif %}</div>
         </div>
       </div>
 
-      <!-- Main Grid -->
       <div class="main-grid">
-        <div style="display:flex;flex-direction:column;gap:1.5rem">
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
 
-          <!-- Recent sessions -->
+          <div class="card">
+            <div class="card__header">
+              <div class="card__title">High Score Kognitif (Memori)</div>
+              <a href="{{ url_for('games.memory') }}" class="card__action">Mainkan Game &rarr;</a>
+            </div>
+            <div class="card__body">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;">
+                <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);">
+                  <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">EASY</div>
+                  <div style="font-size:1.5rem;font-weight:800;color:var(--blue);font-family:var(--font-mono);">{{ memory_scores.easy if memory_scores else 0 }}</div>
+                </div>
+                <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);">
+                  <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">MEDIUM</div>
+                  <div style="font-size:1.5rem;font-weight:800;color:var(--warning);font-family:var(--font-mono);">{{ memory_scores.medium if memory_scores else 0 }}</div>
+                </div>
+                <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);">
+                  <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">HARD</div>
+                  <div style="font-size:1.5rem;font-weight:800;color:var(--danger);font-family:var(--font-mono);">{{ memory_scores.hard if memory_scores else 0 }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="card__header">
               <div class="card__title">Sesi Terkini</div>
-              <a href="{{ url_for('sessions.history') }}" class="card__action">Lihat semua →</a>
+              <a href="{{ url_for('sessions.history') }}" class="card__action">Lihat semua &rarr;</a>
             </div>
             <div class="card__body">
               {% if dummy_mode %}
               <ul class="session-list">
                 {% for item in [
-                  ('◎','Knee Extension','17 Mar 2026','10 reps · 3 sets · 120s','92%','completed'),
-                  ('▲','Shoulder Rotation','16 Mar 2026','15 reps · 2 sets · 90s','84%','completed'),
-                  ('◈','Hip Abduction','15 Mar 2026','8 reps · 2 sets · 75s','78%','in_progress'),
-                  ('⊕','Ankle Circles','14 Mar 2026','20 reps · 3 sets · 60s','95%','completed'),
-                  ('◑','Wrist Flexion','13 Mar 2026','12 reps · 3 sets · 80s','88%','completed'),
+                  ('&#9675;','Knee Extension','17 Mar 2026','10 reps &middot; 3 sets &middot; 120s','92%','completed'),
+                  ('&#9651;','Shoulder Rotation','16 Mar 2026','15 reps &middot; 2 sets &middot; 90s','84%','completed'),
+                  ('&#9670;','Hip Abduction','15 Mar 2026','8 reps &middot; 2 sets &middot; 75s','78%','in_progress'),
+                  ('&#9711;','Ankle Circles','14 Mar 2026','20 reps &middot; 3 sets &middot; 60s','95%','completed'),
+                  ('&#9632;','Wrist Flexion','13 Mar 2026','12 reps &middot; 3 sets &middot; 80s','88%','completed'),
                 ] %}
                 <li class="session-item">
                   <div class="session-item__icon">{{ item[0] }}</div>
-                  <div>
+                  <div style="min-width:0;">
                     <div class="session-item__name">{{ item[1] }}</div>
-                    <div class="session-item__meta">{{ item[2] }} · {{ item[3] }}</div>
+                    <div class="session-item__meta">{{ item[2] }} &middot; {{ item[3] }}</div>
                   </div>
                   <div class="session-item__right">
                     <span class="session-score">{{ item[4] }}</span>
-                    <span class="badge badge--{% if item[5]=='completed' %}success{% elif item[5]=='in_progress' %}warning{% else %}muted{% endif %}">{{ item[5] }}</span>
+                    <span class="badge badge--{% if item[5]=='completed' %}success{% elif item[5]=='in_progress' %}warning{% else %}muted{% endif %}">
+                      {{ 'Selesai' if item[5]=='completed' else 'Berlangsung' if item[5]=='in_progress' else item[5] }}
+                    </span>
                   </div>
                 </li>
                 {% endfor %}
@@ -229,10 +358,10 @@
               <ul class="session-list">
                 {% for s in recent_sessions %}
                 <li class="session-item">
-                  <div class="session-item__icon">◎</div>
-                  <div>
+                  <div class="session-item__icon">&#9675;</div>
+                  <div style="min-width:0;">
                     <div class="session-item__name">{{ s.exercise.name if s.exercise else 'Exercise' }}</div>
-                    <div class="session-item__meta">{{ s.started_at.strftime('%d %b %Y') }} · {{ s.reps_completed }} reps · {{ s.sets_completed }} sets</div>
+                    <div class="session-item__meta">{{ s.started_at.strftime('%d %b %Y') }} &middot; {{ s.reps_completed }} reps &middot; {{ s.sets_completed }} sets</div>
                   </div>
                   <div class="session-item__right">
                     <span class="session-score">{{ s.accuracy_score|round(1) }}%</span>
@@ -243,16 +372,15 @@
               </ul>
               {% else %}
               <div class="empty-state">
-                <div class="empty-icon">◈</div>
-                <div class="empty-title">No sessions yet</div>
-                <div style="font-size:13px;color:var(--text-muted);">Start your first exercise to see your progress here.</div>
-                <a href="{{ url_for('exercises.index') }}" style="display:inline-flex;margin-top:1rem;background:var(--blue);color:#fff;padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:700;text-decoration:none;">Browse Exercises</a>
+                <div class="empty-icon">&#9675;</div>
+                <div class="empty-title">Belum ada sesi</div>
+                <div style="font-size:12px;color:var(--text-muted);">Mulai latihan pertama untuk melihat progress di sini.</div>
+                <a href="{{ url_for('exercises.index') }}" style="display:inline-flex;margin-top:.875rem;background:var(--blue);color:#fff;padding:9px 18px;border-radius:var(--radius);font-size:12px;font-weight:700;text-decoration:none;">Browse Exercises</a>
               </div>
               {% endif %}
             </div>
           </div>
 
-          <!-- Weekly chart -->
           <div class="card">
             <div class="card__header">
               <div class="card__title">Akurasi 7 Hari Terakhir</div>
@@ -261,33 +389,47 @@
             <div class="card__body">
               {% if dummy_mode %}
               <div class="week-bars" id="weekBars"></div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px;font-weight:600" id="weekLabels"></div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;font-weight:600;" id="weekLabels"></div>
               {% elif progress_records %}
-              <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;flex-direction:column;gap:9px;">
                 {% for p in progress_records[:7] %}
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <span style="font-size:12px;font-family:var(--font-mono);color:var(--text-muted);width:60px;font-weight:600;">{{ p.date.strftime('%d %b') }}</span>
-                  <div style="flex:1;height:8px;background:var(--bg-3);border-radius:3px;overflow:hidden;border:1px solid var(--border);"><div style="width:{{ [p.avg_accuracy,100]|min }}%;height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-bright));border-radius:3px;"></div></div>
-                  <span style="font-size:12px;font-family:var(--font-mono);color:var(--blue);width:36px;text-align:right;font-weight:700;">{{ p.avg_accuracy|round(0)|int }}%</span>
+                <div class="prog-row">
+                  <span class="prog-date">{{ p.date.strftime('%d %b') }}</span>
+                  <div class="prog-track"><div class="prog-fill" style="width:{{ [p.avg_accuracy,100]|min }}%;"></div></div>
+                  <span class="prog-pct">{{ p.avg_accuracy|round(0)|int }}%</span>
                 </div>
                 {% endfor %}
               </div>
               {% else %}
-              <div style="font-size:14px;color:var(--text-muted);text-align:center;padding:2rem 0;">Progress data akan muncul setelah sesi pertama Anda.</div>
+              <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1.5rem 0;">Progress data akan muncul setelah sesi pertama Anda.</div>
               {% endif %}
             </div>
           </div>
-        </div>
 
-        <!-- Right column -->
-        <div style="display:flex;flex-direction:column;gap:1.5rem">
+        </div><div style="display:flex;flex-direction:column;gap:1.25rem;">
 
-          <!-- Accuracy ring -->
           <div class="card">
-            <div class="card__header"><div class="card__title">Akurasi Postur</div><span class="badge badge--blue">Minggu ini</span></div>
+            <div class="card__header">
+              <div class="card__title">Akurasi Terapi Wicara</div>
+              <a href="{{ url_for('games.speech') }}" class="card__action">Latihan &rarr;</a>
+            </div>
+            <div class="card__body" style="display:flex;align-items:center;gap:1rem;">
+              <div style="width:48px;height:48px;background:var(--blue-dim);border-radius:12px;display:grid;place-items:center;font-size:20px;">🎤</div>
+              <div>
+                <div style="font-size:1.8rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);line-height:1;">{{ speech_accuracy if speech_accuracy else 0 }}%</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Rata-rata pelafalan benar</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <div class="card__title">Akurasi Postur</div>
+              <span class="badge badge--blue">Minggu ini</span>
+            </div>
             <div class="card__body">
               <div class="accuracy-ring-wrap">
-                <svg class="ring-svg" width="90" height="90" viewBox="0 0 90 90">
+                <svg class="ring-svg" width="88" height="88" viewBox="0 0 90 90">
                   <circle class="ring-track" cx="45" cy="45" r="40"/>
                   <circle class="ring-fill" cx="45" cy="45" r="40"/>
                 </svg>
@@ -300,68 +442,83 @@
           </div>
 
           {% if dummy_mode %}
-          <!-- Recovery plan (dummy only) -->
           <div class="plan-card">
-            <div class="plan-title">🏥 Program Pemulihan</div>
+            <div class="plan-title">Program Pemulihan</div>
             <div class="plan-sub">Ortopedik — Lutut Pasca Operasi</div>
             <div class="plan-progress-wrap"><div class="plan-progress-bar" style="width:65%"></div></div>
             <div class="plan-progress-foot"><span>Minggu 4 dari 8</span><span style="color:var(--blue);font-weight:700;">65%</span></div>
           </div>
           {% endif %}
 
-          <!-- Quick actions -->
           <div class="card">
             <div class="card__header"><div class="card__title">Quick Start</div></div>
             <div class="card__body">
               <div class="quick-actions">
-                <a href="{{ url_for('exercises.index') }}" class="btn-full btn-full-primary"><span>🎯</span> Mulai Sesi Baru</a>
-                <a href="{{ url_for('sessions.history') }}" class="btn-full btn-full-ghost"><span>📋</span> Lihat History</a>
+                <a href="{{ url_for('games.hub') }}" class="btn-full btn-full-primary">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><polygon points="4,2 14,8 4,14" fill="currentColor"/></svg>
+                  Pilih Program Terapi
+                </a>
+                <a href="{{ url_for('sessions.history') }}" class="btn-full btn-full-ghost">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="7.5" width="9" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="11" width="11" height="1.5" rx="1" fill="currentColor"/></svg>
+                  Lihat History
+                </a>
               </div>
             </div>
           </div>
 
           {% if dummy_mode %}
-          <!-- Upcoming (dummy only) -->
           <div class="card">
             <div class="card__header"><div class="card__title">Jadwal Besok</div></div>
-            <div class="card__body" style="padding-bottom:.75rem">
-              <div class="upcoming-item"><div class="upcoming-dot"></div><div><div class="upcoming-name">Knee Extension</div><div class="upcoming-time">08:00 · 3 sets · 10 reps</div></div></div>
-              <div class="upcoming-item"><div class="upcoming-dot" style="background:#b45309;box-shadow:0 0 6px rgba(180,83,9,0.4)"></div><div><div class="upcoming-name">Hip Abduction</div><div class="upcoming-time">10:00 · 3 sets · 12 reps</div></div></div>
-              <div class="upcoming-item"><div class="upcoming-dot"></div><div><div class="upcoming-name">Ankle Circles</div><div class="upcoming-time">14:00 · 2 sets · 20 reps</div></div></div>
+            <div class="card__body" style="padding-bottom:.75rem;">
+              <div class="upcoming-item">
+                <div class="upcoming-dot"></div>
+                <div><div class="upcoming-name">Knee Extension</div><div class="upcoming-time">08:00 &middot; 3 sets &middot; 10 reps</div></div>
+              </div>
+              <div class="upcoming-item">
+                <div class="upcoming-dot" style="background:#b45309;box-shadow:0 0 6px rgba(180,83,9,0.4);"></div>
+                <div><div class="upcoming-name">Hip Abduction</div><div class="upcoming-time">10:00 &middot; 3 sets &middot; 12 reps</div></div>
+              </div>
+              <div class="upcoming-item">
+                <div class="upcoming-dot"></div>
+                <div><div class="upcoming-name">Ankle Circles</div><div class="upcoming-time">14:00 &middot; 2 sets &middot; 20 reps</div></div>
+              </div>
             </div>
           </div>
           {% endif %}
 
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Mobile nav
-    const mobileToggle = document.getElementById('mobileToggle');
-    const mobileNav = document.getElementById('mobileNav');
-    if(mobileToggle) { mobileToggle.addEventListener('click', () => { mobileNav.classList.toggle('open'); mobileToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰'; }); }
-
-    // Dummy weekly chart
+        </div></div></div></div><script>
     {% if dummy_mode %}
     const days = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
     const vals = [75,82,88,70,90,85,87];
     const barsEl = document.getElementById('weekBars');
     const labelsEl = document.getElementById('weekLabels');
-    if(barsEl) {
-      vals.forEach((v,i) => {
-        const wrap = document.createElement('div'); wrap.className='week-bar-wrap';
-        const bar = document.createElement('div'); bar.className='week-bar'; bar.style.height='0px'; bar.title=v+'%';
+    if (barsEl) {
+      vals.forEach((v, i) => {
+        const wrap = document.createElement('div'); wrap.className = 'week-bar-wrap';
+        const bar = document.createElement('div'); bar.className = 'week-bar';
+        bar.style.height = '0px'; bar.title = v + '%';
         wrap.appendChild(bar); barsEl.appendChild(wrap);
-        setTimeout(()=>{ bar.style.height=(v*.8)+'px'; bar.style.transition='height 0.8s ease '+(i*.1)+'s'; },100);
+        setTimeout(() => {
+          bar.style.height = (v * 0.72) + 'px';
+          bar.style.transition = 'height 0.8s ease ' + (i * 0.1) + 's';
+        }, 100);
       });
-      days.forEach(d=>{ const el=document.createElement('span'); el.textContent=d; el.style.flex='1'; el.style.textAlign='center'; el.style.fontSize='9px'; el.style.fontFamily='var(--font-mono)'; el.style.color='var(--text-muted)'; el.style.fontWeight='600'; labelsEl.appendChild(el); });
+      days.forEach(d => {
+        const el = document.createElement('span');
+        el.textContent = d;
+        el.style.cssText = 'flex:1;text-align:center;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);font-weight:600;';
+        labelsEl.appendChild(el);
+      });
     }
     {% endif %}
 
-    // Flash auto dismiss
-    document.querySelectorAll('.flash').forEach(el=>{ setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity 0.4s ease'; setTimeout(()=>el.remove(),400); },4000); });
+    document.querySelectorAll('.flash').forEach(el => {
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => el.remove(), 400);
+      }, 4000);
+    });
   </script>
 </body>
 </html>

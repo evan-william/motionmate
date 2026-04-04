@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Coming Soon — MotionMate</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F4FAFD; --bg-2: #FFFFFF; --bg-3: #E4F2F8; --bg-card: #FFFFFF;
+      --border: rgba(11,155,188,0.16); --border-accent: rgba(11,155,188,0.40);
+      --blue: #0B9BBC; --blue-dim: rgba(11,155,188,0.09); --blue-glow: rgba(11,155,188,0.18);
+      --blue-bright: #17C5E0; --blue-dark: #087A95;
+      --white: #081C2B; --text-muted: #4A789A; --text-sub: #1A506A;
+      --radius: 10px; --radius-lg: 16px;
+      --font-body: 'Outfit', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+      --nav-h: 64px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg); color: var(--white);
+      font-family: var(--font-body); min-height: 100vh;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+      display: flex; flex-direction: column;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: .08; pointer-events: none; z-index: 0;
+    }
+
+    /* Background orbs */
+    .bg-orb-1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(11,155,188,0.09) 0%, transparent 70%); top: -200px; right: -100px; pointer-events: none; z-index: 0; animation: orbFloat 10s ease-in-out infinite; }
+    .bg-orb-2 { position: fixed; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(8,122,149,0.06) 0%, transparent 70%); bottom: -80px; left: -80px; pointer-events: none; z-index: 0; animation: orbFloat 14s ease-in-out infinite reverse; }
+    .bg-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: linear-gradient(rgba(11,155,188,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(11,155,188,0.04) 1px, transparent 1px); background-size: 50px 50px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%); }
+    @keyframes orbFloat { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-25px); } }
+
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem;
+      background: rgba(244,250,253,0.94);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav__brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--white); }
+    .nav__logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 13px; border-radius: 8px; box-shadow: 0 0 16px var(--blue-glow); flex-shrink: 0; }
+    .nav__logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+    .nav__back { color: var(--text-sub); text-decoration: none; font-size: 13px; padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border); transition: all .2s; font-family: var(--font-mono); font-weight: 600; }
+    .nav__back:hover { color: var(--blue); border-color: var(--border-accent); background: var(--blue-dim); }
+
+    /* MAIN CONTENT */
+    .page {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: calc(var(--nav-h) + 2rem) 1.5rem 3rem;
+      position: relative; z-index: 2;
+    }
+
+    .wip-card {
+      max-width: 620px; width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-accent);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      text-align: center;
+      box-shadow: 0 24px 70px rgba(11,155,188,0.13);
+      position: relative; overflow: hidden;
+      animation: fadeUp .7s ease forwards;
+    }
+    @keyframes fadeUp { from{ opacity: 0; transform: translateY(28px); } to{ opacity: 1; transform: translateY(0); } }
+    .wip-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--blue), var(--blue-bright), var(--blue), transparent);
+    }
+
+    /* Animated icon */
+    .wip-icon-wrap {
+      width: 96px; height: 96px;
+      margin: 0 auto 2rem;
+      position: relative;
+    }
+    .wip-icon-outer {
+      width: 96px; height: 96px; border-radius: 24px;
+      background: var(--blue-dim); border: 2px solid var(--border-accent);
+      display: grid; place-items: center;
+      animation: iconPulse 3s ease-in-out infinite;
+    }
+    @keyframes iconPulse {
+      0%,100%{ box-shadow: 0 0 0 0 rgba(11,155,188,0); }
+      50%{ box-shadow: 0 0 0 12px rgba(11,155,188,0.08); }
+    }
+    .wip-icon-svg { width: 46px; height: 46px; color: var(--blue); }
+
+    /* Badge */
+    .wip-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(180,83,9,0.08); border: 1px solid rgba(180,83,9,0.28);
+      color: #b45309; font-size: 10px; font-family: var(--font-mono);
+      text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;
+      padding: 5px 14px; border-radius: 20px;
+      margin-bottom: 1.5rem;
+    }
+    .wip-badge-dot { width: 6px; height: 6px; background: #b45309; border-radius: 50%; animation: warnPulse 1.8s ease-in-out infinite; }
+    @keyframes warnPulse { 0%,100%{ opacity: 1; transform: scale(1); } 50%{ opacity: .4; transform: scale(.7); } }
+
+    .wip-title {
+      font-size: 2rem; font-weight: 800; letter-spacing: -1px;
+      line-height: 1.15; margin-bottom: .875rem;
+      color: var(--white);
+    }
+    .wip-title .accent {
+      background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .wip-desc {
+      font-size: 15px; color: var(--text-sub); line-height: 1.75;
+      max-width: 480px; margin: 0 auto 2rem; font-weight: 400;
+    }
+
+    /* Progress meter */
+    .wip-progress-section { margin-bottom: 2rem; }
+    .wip-progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; font-family: var(--font-mono);
+      color: var(--text-muted); margin-bottom: 7px; font-weight: 700;
+    }
+    .wip-progress-label span:last-child { color: var(--blue); }
+    .wip-track {
+      width: 100%; height: 8px; background: var(--bg-3);
+      border-radius: 4px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .wip-fill {
+      height: 100%; width: 72%;
+      background: linear-gradient(90deg, var(--blue), var(--blue-bright));
+      border-radius: 4px;
+      animation: fillAnim 2s ease forwards;
+      position: relative; overflow: hidden;
+    }
+    @keyframes fillAnim { from{ width: 0; } to{ width: 72%; } }
+    .wip-fill::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+      animation: shimmer 2.5s ease-in-out 2s infinite;
+      background-size: 200% 100%;
+    }
+    @keyframes shimmer { 0%{ background-position: -200% 0; } 100%{ background-position: 200% 0; } }
+
+    /* Feature chips */
+    .wip-features {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin-bottom: 2rem;
+    }
+    .wip-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 13px;
+      font-size: 11px; font-family: var(--font-mono); color: var(--text-sub);
+      font-weight: 600;
+    }
+    .wip-chip .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+
+    /* Buttons */
+    .wip-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--blue); color: #fff;
+      font-family: var(--font-body); font-weight: 700; font-size: 14px;
+      padding: 12px 26px; border-radius: var(--radius);
+      text-decoration: none; border: none; cursor: pointer;
+      transition: all .25s; box-shadow: 0 4px 20px rgba(11,155,188,.30);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary:hover { background: var(--blue-bright); box-shadow: 0 6px 30px rgba(11,155,188,.45); transform: translateY(-1px); }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--text-sub);
+      font-family: var(--font-body); font-weight: 600; font-size: 14px;
+      padding: 12px 22px; border-radius: var(--radius);
+      text-decoration: none; border: 1px solid var(--border); cursor: pointer;
+      transition: all .25s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-ghost:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
+
+    /* Decorative bottom text */
+    .wip-eta {
+      margin-top: 1.75rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 11px; font-family: var(--font-mono);
+      color: var(--text-muted); font-weight: 600;
+    }
+    .wip-eta span { color: var(--blue); }
+
+    @media (max-width: 480px) {
+      .wip-card { padding: 2rem 1.5rem; }
+      .wip-title { font-size: 1.6rem; }
+      .wip-actions { flex-direction: column; align-items: stretch; }
+      .btn-primary, .btn-ghost { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb-1"></div>
+  <div class="bg-orb-2"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="nav">
+    <a href="{{ url_for('main.index') }}" class="nav__brand">
+      <span class="nav__logo-mark">M</span>
+      <span class="nav__logo-text">MotionMate</span>
+    </a>
+    <a href="{{ url_for('games.hub') }}" class="nav__back">
+      &larr; Kembali ke Library
+    </a>
+  </nav>
+
+  <div class="page">
+    <div class="wip-card">
+
+      <div class="wip-icon-wrap">
+        <div class="wip-icon-outer">
+          <svg class="wip-icon-svg" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Gear / settings icon representing under construction -->
+            <circle cx="23" cy="23" r="7" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M23 5v4M23 37v4M5 23h4M37 23h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M9.2 9.2l2.8 2.8M33.9 33.9l2.8 2.8M9.2 36.8l2.8-2.8M33.9 12.1l2.8-2.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="23" cy="23" r="3.5" fill="currentColor" opacity=".35"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="wip-badge">
+        <span class="wip-badge-dot"></span>
+        Work in Progress
+      </div>
+
+      <h1 class="wip-title">Fitur ini sedang<br>dalam <span class="accent">pengembangan</span></h1>
+
+      <p class="wip-desc">
+        Sesi tracker berbasis AI dengan deteksi pose real-time sedang kami bangun. Tim kami bekerja keras agar pengalaman latihan Anda menjadi lebih akurat, cerdas, dan menyenangkan. Nantikan peluncurannya!
+      </p>
+
+      <div class="wip-progress-section">
+        <div class="wip-progress-label">
+          <span>Development Progress</span>
+          <span>72%</span>
+        </div>
+        <div class="wip-track">
+          <div class="wip-fill"></div>
+        </div>
+      </div>
+
+      <div class="wip-features">
+        <span class="wip-chip"><span class="chip-dot"></span>AI Pose Detection</span>
+        <span class="wip-chip"><span class="chip-dot"></span>Real-time Accuracy Score</span>
+        <span class="wip-chip"><span class="chip-dot"></span>33 Body Keypoints</span>
+        <span class="wip-chip"><span class="chip-dot"></span>Instant Form Feedback</span>
+        <span class="wip-chip"><span class="chip-dot"></span>Session Auto-Save</span>
+      </div>
+
+      <div class="wip-actions">
+        <a href="{{ url_for('games.hub') }}" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Kembali ke Library
+        </a>
+        <a href="{{ url_for('dashboard.index') }}" class="btn-ghost">
+          Dashboard &rarr;
+        </a>
+      </div>
+
+      <div class="wip-eta">
+        Target rilis: <span>Q2 2026</span> &middot; Phase 2 Roadmap &middot; Stay tuned!
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Gentle gear rotation on the icon
+    const iconSvg = document.querySelector('.wip-icon-svg');
+    if (iconSvg) {
+      let deg = 0;
+      setInterval(() => {
+        deg += 0.4;
+        iconSvg.style.transform = `rotate(${deg}deg)`;
+      }, 16);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Program Terapi , MotionMate</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#F4FAFD; --bg-card:#FFFFFF; --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-bright:#17C5E0; --white:#081C2B; --text-muted:#4A789A; --radius-xl:24px; --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{font-size:16px} body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased}
+    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;position:relative;z-index:2} .inner{max-width:1000px;margin:0 auto;padding:0 1.5rem}
+    .page-title{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:800;letter-spacing:-1px;text-align:center;margin-bottom:1rem}
+    .page-sub{text-align:center;color:var(--text-muted);margin-bottom:3rem;font-size:15px}
+    .hub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem}
+    .hub-card{background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;text-decoration:none;color:var(--white);transition:all .3s;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(11,155,188,0.06)}
+    .hub-card:hover{transform:translateY(-5px);border-color:var(--border-accent);box-shadow:0 12px 36px rgba(11,155,188,0.15)}
+    .hub-img{height:180px;width:100%;object-fit:cover;border-bottom:1px solid var(--border)}
+    .hub-body{padding:1.5rem;flex:1;display:flex;flex-direction:column}
+    .hub-cat{font-size:10px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px}
+    .hub-title{font-size:1.4rem;font-weight:800;margin-bottom:8px;letter-spacing:-0.5px}
+    .hub-desc{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:1.5rem;flex:1}
+    .hub-btn{background:var(--blue-dim);color:var(--blue);border:1px solid var(--border-accent);border-radius:8px;padding:10px;text-align:center;font-weight:700;font-size:13px;transition:all .2s}
+    .hub-card:hover .hub-btn{background:var(--blue);color:#fff}
+    @media (max-width:768px){.hub-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  {% set active_page = 'exercises' %}
+  {% include 'partials/nav.html' %}
+
+  <div class="page">
+    <div class="inner">
+      <h1 class="page-title">Pilih Program Terapi Anda</h1>
+      <p class="page-sub">Kami menyediakan terapi holistik untuk mengembalikan kemampuan fisik, kognitif, dan komunikasi Anda.</p>
+      
+      <div class="hub-grid">
+        <a href="{{ url_for('exercises.index') }}" class="hub-card">
+          <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80&fit=crop" class="hub-img" alt="Motorik">
+          <div class="hub-body">
+            <div class="hub-cat">TERAPI FISIK</div>
+            <div class="hub-title">Rehabilitasi Motorik</div>
+            <div class="hub-desc">Latih kekuatan otot dan sendi dengan panduan AI pose tracking yang mengevaluasi gerakan Anda secara live lewat kamera.</div>
+            <div class="hub-btn">Pilih Latihan Fisik &rarr;</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('games.memory') }}" class="hub-card">
+          <img src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&q=80&fit=crop" class="hub-img" alt="Memori">
+          <div class="hub-body">
+            <div class="hub-cat">KOGNITIF</div>
+            <div class="hub-title">Pelatihan Memori</div>
+            <div class="hub-desc">Tingkatkan daya ingat dan konsentrasi melalui permainan pola urutan visual. Tersedia level mudah, sedang, hingga sulit.</div>
+            <div class="hub-btn">Mainkan Game Memori &rarr;</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('games.speech') }}" class="hub-card">
+          <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800&q=80&fit=crop" class="hub-img" alt="Wicara">
+          <div class="hub-body">
+            <div class="hub-cat">KOMUNIKASI</div>
+            <div class="hub-title">Terapi Wicara</div>
+            <div class="hub-desc">Latih pelafalan dan kelancaran berbicara. Ucapkan kalimat yang muncul, dan sistem AI akan menilai keakuratannya.</div>
+            <div class="hub-btn">Mulai Latihan Wicara &rarr;</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('main.wip') }}" class="hub-card" style="opacity:0.8">
+          <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80&fit=crop" class="hub-img" alt="ADL">
+          <div class="hub-body">
+            <div class="hub-cat">KESEHARIAN (WIP)</div>
+            <div class="hub-title">Aktivitas Sehari-hari</div>
+            <div class="hub-desc">Panduan interaktif untuk membantu pasien kembali mandiri dalam melakukan rutinitas harian (Activities of Daily Living).</div>
+            <div class="hub-btn" style="background:#f59e0b;color:#fff;border:none;">Segera Hadir</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

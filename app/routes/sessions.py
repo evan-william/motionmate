@@ -27,7 +27,15 @@ def start(exercise_id):
             "difficulty": "beginner",
         }
         dummy_session = {"id": 1}
-        return render_template("sessions/tracker.html", dummy_mode=True, session=dummy_session, exercise=dummy_exercise)
+
+        # Dummy
+        return render_template(
+            "sessions/tracker.html",
+            dummy_mode=True,
+            session=dummy_session,
+            exercise=dummy_exercise,
+            rehab_session_id=dummy_session["id"],  
+        )
 
     exercise = Exercise.query.filter_by(id=exercise_id, is_active=True).first_or_404()
     session_obj = RehabSession(
@@ -37,7 +45,15 @@ def start(exercise_id):
     )
     db.session.add(session_obj)
     db.session.commit()
-    return render_template("sessions/tracker.html", dummy_mode=False, session=session_obj, exercise=exercise)
+    
+    # Real
+    return render_template(
+        "sessions/tracker.html",
+        dummy_mode=False,
+        session=session_obj,
+        exercise=exercise,
+        rehab_session_id=session_obj.id,       
+    )
 
 
 @sessions_bp.route("/<int:session_id>/complete", methods=["POST"])

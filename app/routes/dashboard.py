@@ -1,11 +1,11 @@
 """
-Dashboard routes — user overview, progress stats.
+Dashboard routes , user overview, progress stats.
 """
 
 from flask import Blueprint, render_template
 from ..utils.auth import login_required, current_user_id, is_dummy_mode
 from ..models.user import User
-from ..models.exercise import RehabSession, Progress
+from ..models.exercise import RehabSession, Progress, GameSession
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -16,7 +16,6 @@ def index():
     dummy = is_dummy_mode()
 
     if dummy:
-        # Serve dummy data — no DB queries needed
         return render_template(
             "dashboard/index.html",
             dummy_mode=True,
@@ -26,6 +25,8 @@ def index():
             streak=12,
             recent_sessions=[],
             progress_records=[],
+            memory_scores={'easy': 450, 'medium': 320, 'hard': 150},
+            speech_accuracy=92.5
         )
 
     uid = current_user_id()
@@ -56,6 +57,16 @@ def index():
 
     streak = progress_records[0].streak_days if progress_records else 0
 
+    memory_sessions = GameSession.query.filter_by(user_id=uid, game_type='memory').all()
+    memory_scores = {
+        'easy': max([s.score for s in memory_sessions if s.difficulty == 'easy'] + [0]),
+        'medium': max([s.score for s in memory_sessions if s.difficulty == 'medium'] + [0]),
+        'hard': max([s.score for s in memory_sessions if s.difficulty == 'hard'] + [0])
+    }
+
+    speech_sessions = GameSession.query.filter_by(user_id=uid, game_type='speech').all()
+    speech_accuracy = sum([s.accuracy for s in speech_sessions]) / len(speech_sessions) if speech_sessions else 0.0
+
     return render_template(
         "dashboard/index.html",
         dummy_mode=False,
@@ -65,4 +76,6 @@ def index():
         streak=streak,
         recent_sessions=recent_sessions,
         progress_records=progress_records,
+        memory_scores=memory_scores,
+        speech_accuracy=round(speech_accuracy, 1)
     )

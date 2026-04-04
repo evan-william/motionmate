@@ -1,32 +1,203 @@
 {# Shared nav snippet — include in inner pages with:
-   {% set active_page = 'dashboard' %}
+   {% set active_page = 'dashboard' %}  (or 'exercises' / 'history')
    {% include 'partials/nav.html' %}
 #}
-<nav class="nav" id="mainNav">
-  <a href="{{ url_for('main.index') }}" class="nav__brand">
-    <span class="nav__logo-mark">M</span>
-    <span class="nav__logo-text">MotionMate</span>
+<style>
+  .mm-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: var(--nav-h);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem;
+    background: rgba(4,9,15,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .mm-nav__brand {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--white);
+    flex-shrink: 0;
+  }
+  .mm-nav__logo-mark {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+    color: #04090f;
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-weight: 700; font-size: 14px;
+    border-radius: 8px;
+    box-shadow: 0 0 16px var(--blue-glow);
+    flex-shrink: 0;
+  }
+  .mm-nav__logo-text {
+    font-weight: 700; font-size: 15px; letter-spacing: -0.3px;
+    white-space: nowrap;
+  }
+  .mm-nav__links {
+    display: flex; align-items: center; gap: 2px;
+  }
+  .mm-nav__link {
+    color: var(--text-sub); text-decoration: none;
+    font-size: 13px; font-weight: 400;
+    padding: 7px 12px; border-radius: 7px;
+    transition: color 0.2s, background 0.2s;
+    white-space: nowrap;
+  }
+  .mm-nav__link:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+  .mm-nav__link--active { color: var(--blue); }
+  .mm-nav__dummy-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.3);
+    color: #f59e0b;
+    font-size: 10px; font-family: var(--font-mono);
+    padding: 4px 10px; border-radius: 20px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .mm-nav__toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    padding: 7px 11px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .mm-nav__toggle:hover { border-color: var(--border-accent); color: var(--blue); }
+
+  /* Mobile drawer */
+  .mm-mobile-nav {
+    display: none;
+    position: fixed; top: var(--nav-h); left: 0; right: 0;
+    background: rgba(4,9,15,0.98);
+    border-bottom: 1px solid var(--border-accent);
+    padding: 1.25rem 1.5rem;
+    flex-direction: column; gap: 4px;
+    z-index: 99;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+  .mm-mobile-nav.open { display: flex; }
+  .mm-mobile-nav a {
+    color: var(--text-sub); text-decoration: none;
+    font-size: 15px; font-weight: 500;
+    padding: 11px 16px; border-radius: 9px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .mm-mobile-nav a:hover {
+    color: var(--white);
+    background: rgba(255,255,255,0.05);
+    border-color: var(--border);
+  }
+  .mm-mobile-nav a.active {
+    color: var(--blue);
+    background: var(--blue-dim);
+    border-color: var(--border-accent);
+  }
+  .mm-mobile-nav__sep {
+    height: 1px; background: var(--border);
+    margin: 6px 0;
+  }
+  .mm-mobile-nav__dummy {
+    font-size: 11px; font-family: var(--font-mono);
+    color: #f59e0b;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 9px;
+    padding: 10px 16px;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 768px) {
+    .mm-nav { padding: 0 1rem; }
+    .mm-nav__links { display: none; }
+    .mm-nav__toggle { display: block; }
+  }
+</style>
+
+<nav class="mm-nav" id="mmNav">
+  <a href="{{ url_for('main.index') }}" class="mm-nav__brand">
+    <span class="mm-nav__logo-mark">M</span>
+    <span class="mm-nav__logo-text">MotionMate</span>
   </a>
-  <div class="nav__links">
-    <a href="{{ url_for('dashboard.index') }}" class="nav__link {% if active_page == 'dashboard' %}nav__link--active{% endif %}">Dashboard</a>
-    <a href="{{ url_for('exercises.index') }}" class="nav__link {% if active_page == 'exercises' %}nav__link--active{% endif %}">Exercises</a>
-    <a href="{{ url_for('sessions.history') }}" class="nav__link {% if active_page == 'history' %}nav__link--active{% endif %}">History</a>
+
+  <div class="mm-nav__links">
+    <a href="{{ url_for('dashboard.index') }}"
+       class="mm-nav__link {% if active_page == 'dashboard' %}mm-nav__link--active{% endif %}">
+      Dashboard
+    </a>
+    <a href="{{ url_for('exercises.index') }}"
+       class="mm-nav__link {% if active_page == 'exercises' %}mm-nav__link--active{% endif %}">
+      Exercises
+    </a>
+    <a href="{{ url_for('games.hub') }}"
+       class="mm-nav__link {% if active_page == 'games' %}mm-nav__link--active{% endif %}">
+      Therapy Program
+    </a>
+    <a href="{{ url_for('sessions.history') }}"
+       class="mm-nav__link {% if active_page == 'history' %}mm-nav__link--active{% endif %}">
+      History
+    </a>
     {% if dummy_mode %}
-      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(180,83,9,0.10);border:1px solid rgba(180,83,9,0.25);color:#b45309;font-size:11px;font-family:var(--font-mono);padding:4px 10px;border-radius:20px;letter-spacing:.5px;font-weight:600;">🎭 Dummy Mode</span>
-      <a href="{{ url_for('main.disable_dummy') }}" class="nav__link" style="color:var(--text-muted)">Exit Demo</a>
+      <span class="mm-nav__dummy-badge">&#9632; Dummy Mode</span>
+      <a href="{{ url_for('main.disable_dummy') }}" class="mm-nav__link" style="color:var(--text-muted)">Exit Demo</a>
     {% else %}
-      <a href="{{ url_for('auth.logout') }}" class="nav__link" style="color:var(--text-muted)">Logout</a>
+      <a href="{{ url_for('auth.logout') }}" class="mm-nav__link" style="color:var(--text-muted)">Logout</a>
     {% endif %}
   </div>
-  <button class="nav__mobile-toggle" id="mobileToggle" aria-label="Menu">☰</button>
+
+  <button class="mm-nav__toggle" id="mmToggle" aria-label="Toggle menu" aria-expanded="false">
+    &#9776;
+  </button>
 </nav>
-<div class="mobile-nav" id="mobileNav">
-  <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
-  <a href="{{ url_for('exercises.index') }}">Exercises</a>
-  <a href="{{ url_for('sessions.history') }}">History</a>
+
+<div class="mm-mobile-nav" id="mmMobileNav">
+  <a href="{{ url_for('dashboard.index') }}"
+     class="{% if active_page == 'dashboard' %}active{% endif %}">
+    Dashboard
+  </a>
+  <a href="{{ url_for('exercises.index') }}"
+     class="{% if active_page == 'exercises' %}active{% endif %}">
+    Exercises
+  </a>
+  <a href="{{ url_for('games.hub') }}"
+     class="{% if active_page == 'games' %}active{% endif %}">
+    Therapy Program
+  </a>
+  <a href="{{ url_for('sessions.history') }}"
+     class="{% if active_page == 'history' %}active{% endif %}">
+    History
+  </a>
+  <div class="mm-mobile-nav__sep"></div>
   {% if dummy_mode %}
-    <a href="{{ url_for('main.disable_dummy') }}" style="color:#b45309;">🎭 Exit Dummy Mode</a>
+    <div class="mm-mobile-nav__dummy">&#9632; Dummy Mode aktif</div>
+    <a href="{{ url_for('main.disable_dummy') }}" style="color:#f59e0b;">Exit Demo</a>
   {% else %}
-    <a href="{{ url_for('auth.logout') }}" style="color:var(--text-muted)">Logout</a>
+    <a href="{{ url_for('auth.logout') }}" style="color:var(--text-muted);">Logout</a>
   {% endif %}
 </div>
+
+<script>
+  (function() {
+    var btn = document.getElementById('mmToggle');
+    var nav = document.getElementById('mmMobileNav');
+    if (!btn || !nav) return;
+    btn.addEventListener('click', function() {
+      var open = nav.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open);
+      btn.innerHTML = open ? '&#10005;' : '&#9776;';
+    });
+    nav.querySelectorAll('a').forEach(function(a) {
+      a.addEventListener('click', function() {
+        nav.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = '&#9776;';
+      });
+    });
+  })();
+</script>

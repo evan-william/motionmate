@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sesi — MotionMate</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Sesi Aktif &mdash; MotionMate</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
   <meta name="theme-color" content="#18B8D6">
@@ -10,153 +11,280 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#F4FAFD;--bg-2:#FFFFFF;--bg-3:#E4F2F8;--bg-card:#FFFFFF;
-      --border:rgba(11,155,188,0.16);--border-accent:rgba(11,155,188,0.40);
-      --blue:#0B9BBC;--blue-dim:rgba(11,155,188,0.09);--blue-glow:rgba(11,155,188,0.18);
-      --blue-bright:#17C5E0;--blue-dark:#087A95;
-      --white:#081C2B;--white-dim:rgba(8,28,43,0.72);
-      --text-muted:#4A789A;--text-sub:#1A506A;
-      --danger:#d9001e;--warning:#b45309;--success:#15803d;
-      --radius:10px;--radius-lg:16px;--radius-xl:24px;
-      --font-body:'Outfit',sans-serif;--font-mono:'JetBrains Mono',monospace;--nav-h:68px;
+    :root {
+      --bg:#F4FAFD; --bg-2:#FFFFFF; --bg-3:#E4F2F8; --bg-card:#FFFFFF;
+      --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40);
+      --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-glow:rgba(11,155,188,0.18);
+      --blue-bright:#17C5E0; --blue-dark:#087A95;
+      --white:#081C2B; --white-dim:rgba(8,28,43,0.72);
+      --text-muted:#4A789A; --text-sub:#1A506A;
+      --danger:#d9001e; --warning:#b45309; --success:#15803d;
+      --radius:10px; --radius-lg:16px; --radius-xl:24px;
+      --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace;
+      --nav-h:64px;
     }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.06;pointer-events:none;z-index:0}
-    .bg-orb{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(11,155,188,0.07) 0%,transparent 70%);top:-150px;right:-150px;pointer-events:none;z-index:0;animation:orbFloat 12s ease-in-out infinite}
-    @keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg); color: var(--white);
+      font-family: var(--font-body); min-height: 100vh;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: .06; pointer-events: none; z-index: 0;
+    }
+
     /* NAV */
-    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;background:rgba(244,250,253,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-    .nav__brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--white)}
-    .nav__logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:14px;border-radius:8px;box-shadow:0 0 18px var(--blue-glow)}
-    .nav__logo-text{font-weight:700;font-size:16px;letter-spacing:-0.3px;color:var(--white)}
-    .nav__session-info{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-sub);font-family:var(--font-mono);font-weight:600}
-    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite;box-shadow:0 0 8px var(--blue-glow);flex-shrink:0}
-    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem;
+      background: rgba(244,250,253,0.96);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav__brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--white); flex-shrink: 0; }
+    .nav__logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 14px; border-radius: 8px; box-shadow: 0 0 16px var(--blue-glow); flex-shrink: 0; }
+    .nav__logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+    .nav__session-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-sub); font-family: var(--font-mono); font-weight: 600; }
+    .nav__right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .nav__action-link { color: var(--text-muted); text-decoration: none; font-size: 12px; font-family: var(--font-mono); font-weight: 700; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border); transition: all .2s; }
+    .nav__action-link:hover { border-color: var(--border-accent); color: var(--blue); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: pulse 2s infinite; box-shadow: 0 0 8px var(--blue-glow); flex-shrink: 0; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
     /* PAGE */
-    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;position:relative;z-index:2}
-    .inner{max-width:1100px;margin:0 auto;padding:0 2.5rem}
-    .tracker-grid{display:grid;grid-template-columns:1fr 400px;gap:1.5rem;align-items:start}
-    /* CAMERA CARD */
-    .camera-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;position:relative;box-shadow:0 4px 16px rgba(11,155,188,0.08)}
-    .camera-area{width:100%;aspect-ratio:16/9;background:var(--bg-3);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-    .camera-area canvas{position:absolute;inset:0;width:100%;height:100%}
-    .camera-placeholder-inner{text-align:center;position:relative;z-index:2}
-    .camera-big-icon{font-size:5rem;opacity:.2;margin-bottom:1.5rem}
-    .camera-status-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(180,83,9,0.10);border:2px solid rgba(180,83,9,0.25);color:#b45309;font-size:12px;font-family:var(--font-mono);padding:8px 16px;border-radius:20px;letter-spacing:.5px;margin-bottom:.75rem;font-weight:700}
-    .camera-desc{font-size:14px;color:var(--text-sub);max-width:300px;line-height:1.7}
-    .camera-overlay-top{position:absolute;top:0;left:0;right:0;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(228,242,248,0.9),transparent);z-index:3}
-    .camera-overlay-bot{position:absolute;bottom:0;left:0;right:0;padding:1rem 1.25rem;background:linear-gradient(to top,rgba(228,242,248,0.9),transparent);z-index:3;display:flex;align-items:center;justify-content:space-between}
-    .accuracy-pill{display:flex;align-items:center;gap:6px;background:rgba(11,155,188,0.12);border:2px solid var(--border-accent);border-radius:20px;padding:5px 14px;font-size:12px;font-family:var(--font-mono);color:var(--blue);font-weight:700}
-    .form-feedback{font-size:13px;font-family:var(--font-mono);color:var(--text-sub);background:rgba(255,255,255,0.85);padding:6px 14px;border-radius:8px;font-weight:600;border:1px solid var(--border)}
-    .camera-card-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:rgba(11,155,188,0.02)}
-    .cam-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-muted);border:2px solid var(--border);padding:9px 16px;border-radius:var(--radius);font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all .2s;text-decoration:none;font-weight:600}
-    .cam-btn:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
-    .cam-btn--danger{color:var(--danger);}
-    .cam-btn--danger:hover{border-color:rgba(217,0,30,.35);color:var(--danger);background:rgba(217,0,30,.07)}
-    /* CONTROLS COL */
-    .controls-col{display:flex;flex-direction:column;gap:1rem}
-    /* EXERCISE INFO */
-    .exercise-info-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:0 2px 8px rgba(11,155,188,0.06)}
-    .ex-info-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;background:rgba(11,155,188,0.03)}
-    .ex-info-icon{width:46px;height:46px;background:var(--blue-dim);border:2px solid var(--border-accent);border-radius:11px;display:grid;place-items:center;color:var(--blue);font-size:20px;flex-shrink:0}
-    .ex-info-cat{font-size:10px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;font-weight:700}
-    .ex-info-name{font-size:17px;font-weight:800;letter-spacing:-0.5px;color:var(--white)}
-    .ex-info-body{padding:1.25rem 1.5rem}
-    .ex-spec-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
-    .ex-spec{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center}
-    .ex-spec-val{font-size:1.25rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);letter-spacing:-0.5px}
-    .ex-spec-label{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;font-weight:700}
-    .ex-progress-bar-wrap{background:var(--bg-3);border-radius:4px;height:7px;overflow:hidden;margin-bottom:6px;border:1px solid var(--border)}
-    .ex-progress-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--blue-bright));transition:width .4s ease}
-    .ex-progress-foot{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);font-weight:700}
-    /* TIMER CARD */
-    .timer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;text-align:center;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(11,155,188,0.06)}
-    .timer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--blue),transparent)}
-    .timer-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px;font-weight:700}
-    .timer-display{font-size:3.6rem;font-weight:800;font-family:var(--font-mono);letter-spacing:-2px;color:var(--white);line-height:1;margin-bottom:1.25rem}
-    .timer-display.running{color:var(--blue);text-shadow:0 2px 20px rgba(11,155,188,0.25)}
-    .timer-display.paused{color:#b45309}
-    .timer-btn-row{display:flex;gap:8px;justify-content:center}
-    .timer-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .25s}
-    .timer-btn-start{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(11,155,188,.25)}
-    .timer-btn-start:hover{background:var(--blue-bright);box-shadow:0 6px 22px rgba(11,155,188,.40)}
-    .timer-btn-pause{background:rgba(180,83,9,.10);color:#b45309;border:2px solid rgba(180,83,9,.25)}
-    .timer-btn-pause:hover{background:rgba(180,83,9,.18)}
-    .timer-btn-reset{background:transparent;color:var(--text-muted);border:2px solid var(--border);font-weight:600}
-    .timer-btn-reset:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
-    /* REPS CARD */
-    .reps-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;box-shadow:0 2px 8px rgba(11,155,188,0.06)}
-    .reps-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
-    .reps-title{font-size:14px;font-weight:800;color:var(--white)}
-    .set-badges{display:flex;gap:4px}
-    .set-badge{width:26px;height:26px;border-radius:6px;border:2px solid var(--border);display:grid;place-items:center;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);cursor:pointer;transition:all .2s;font-weight:700}
-    .set-badge.done{background:var(--blue-dim);border-color:var(--border-accent);color:var(--blue)}
-    .set-badge.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 12px rgba(11,155,188,.35)}
-    .reps-counter{display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1.25rem}
-    .rep-dec,.rep-inc{width:50px;height:50px;border-radius:12px;border:none;cursor:pointer;font-size:1.5rem;display:grid;place-items:center;transition:all .2s;font-weight:800}
-    .rep-dec{background:var(--bg-3);color:var(--text-sub);border:2px solid var(--border)}
-    .rep-dec:hover{background:rgba(217,0,30,.10);color:var(--danger);border-color:rgba(217,0,30,.25)}
-    .rep-dec:active{transform:scale(.9)}
-    .rep-inc{background:var(--blue-dim);color:var(--blue);border:2px solid var(--border-accent)}
-    .rep-inc:hover{background:var(--blue);color:#fff;box-shadow:0 4px 16px rgba(11,155,188,.30)}
-    .rep-inc:active{transform:scale(.9)}
-    .rep-count{font-size:4rem;font-weight:800;font-family:var(--font-mono);color:var(--white);letter-spacing:-3px;min-width:80px;text-align:center;line-height:1;animation:repPop .12s ease}
-    @keyframes repPop{0%{transform:scale(1.2)}100%{transform:scale(1)}}
-    .rep-target{font-size:14px;color:var(--text-muted);font-family:var(--font-mono);text-align:center;margin-bottom:1.25rem;font-weight:600}
-    .rep-target span{color:var(--blue);font-weight:800}
-    .rep-pip-row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:1rem}
-    .rep-pip{width:14px;height:14px;border-radius:3px;background:var(--bg-3);border:1px solid var(--border);transition:all .2s}
-    .rep-pip.done{background:var(--blue);border-color:var(--blue);box-shadow:0 0 5px rgba(11,155,188,.30)}
-    .rep-pip.current{background:rgba(11,155,188,.25);border-color:var(--border-accent)}
-    .next-set-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue-dim);border:2px solid var(--border-accent);color:var(--blue);padding:11px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;transition:all .25s}
-    .next-set-btn:hover{background:var(--blue);color:#fff;box-shadow:0 4px 16px rgba(11,155,188,.30)}
-    .next-set-btn:disabled{opacity:.4;cursor:not-allowed}
-    .finish-btn-wrap{margin-top:.5rem}
-    .finish-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--blue);color:#fff;padding:14px;border-radius:var(--radius-lg);font-size:16px;font-weight:800;cursor:pointer;border:none;transition:all .25s;box-shadow:0 4px 20px rgba(11,155,188,.30)}
-    .finish-btn:hover{background:var(--blue-bright);box-shadow:0 8px 30px rgba(11,155,188,.45);transform:translateY(-1px)}
-    /* ACCURACY */
-    .accuracy-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;box-shadow:0 2px 8px rgba(11,155,188,0.06)}
-    .accuracy-title{font-size:14px;font-weight:800;margin-bottom:1rem;color:var(--white)}
-    .accuracy-display{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
-    .accuracy-ring{position:relative;width:70px;height:70px;flex-shrink:0}
-    .accuracy-ring svg{transform:rotate(-90deg)}
-    .ring-track-s{fill:none;stroke:var(--bg-3);stroke-width:7}
-    .ring-fill-s{fill:none;stroke:var(--blue);stroke-width:7;stroke-linecap:round;stroke-dasharray:175;transition:stroke-dashoffset .5s ease;filter:drop-shadow(0 0 4px var(--blue-glow))}
-    .acc-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;font-family:var(--font-mono);color:var(--blue)}
-    .acc-note{font-size:13px;color:var(--text-muted);line-height:1.6}
-    .accuracy-slider{width:100%;appearance:none;height:7px;border-radius:4px;background:var(--bg-3);outline:none;cursor:pointer;border:1px solid var(--border)}
-    .accuracy-slider::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;background:var(--blue);cursor:pointer;box-shadow:0 2px 10px var(--blue-glow)}
-    /* MODAL */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(8,28,43,0.55);backdrop-filter:blur(12px);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem}
-    .modal-backdrop.open{display:flex}
-    .modal{background:var(--bg-card);border:2px solid var(--border-accent);border-radius:var(--radius-xl);padding:2.5rem;max-width:480px;width:100%;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(11,155,188,0.20)}
-    .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--blue),transparent)}
-    .modal-confetti{font-size:3rem;text-align:center;margin-bottom:1rem}
-    .modal-title{font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;text-align:center;margin-bottom:.5rem;color:var(--white)}
-    .modal-sub{font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:2rem}
-    .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:2rem}
-    .modal-stat{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;text-align:center}
-    .modal-stat-val{font-size:1.7rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);letter-spacing:-1px}
-    .modal-stat-label{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;font-weight:700}
-    .modal-accuracy-row{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center}
-    .modal-acc-label{font-size:14px;color:var(--text-sub);font-weight:600}
-    .modal-acc-val{font-size:1.5rem;font-weight:800;font-family:var(--font-mono);color:var(--blue)}
-    .modal-buttons{display:flex;flex-direction:column;gap:.75rem}
-    .btn-full-primary{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue);color:#fff;font-family:var(--font-body);font-weight:800;font-size:16px;padding:14px;border-radius:var(--radius);border:none;cursor:pointer;transition:all .25s;box-shadow:0 4px 18px rgba(11,155,188,.28);text-decoration:none}
-    .btn-full-primary:hover{background:var(--blue-bright);box-shadow:0 8px 28px rgba(11,155,188,.42)}
-    .btn-full-ghost{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:transparent;color:var(--text-sub);font-family:var(--font-body);font-weight:600;font-size:14px;padding:12px;border-radius:var(--radius);border:2px solid var(--border);cursor:pointer;transition:all .25s;text-decoration:none}
-    .btn-full-ghost:hover{border-color:var(--border-accent);color:var(--blue);background:var(--blue-dim)}
+    .page { padding-top: calc(var(--nav-h) + 1.5rem); padding-bottom: 3rem; position: relative; z-index: 2; }
+    .inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
     /* DUMMY BANNER */
-    .dummy-banner{background:rgba(180,83,9,0.08);border:1px solid rgba(180,83,9,0.25);border-radius:var(--radius-lg);padding:.75rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:10px;font-size:12px;color:#b45309;font-family:var(--font-mono);font-weight:700;}
-    @media(max-width:900px){.tracker-grid{grid-template-columns:1fr}.controls-col{flex-direction:row;flex-wrap:wrap}.exercise-info-card,.timer-card,.reps-card,.accuracy-card{flex:1 1 280px;min-width:250px}}
-    @media(max-width:768px){.nav{padding:0 1.25rem}.inner{padding:0 1.25rem}.nav__session-info{display:none}}
-    @media(max-width:480px){.controls-col{flex-direction:column}.timer-display{font-size:2.8rem}.rep-count{font-size:3rem}}
+    .dummy-banner { background: rgba(180,83,9,0.07); border: 1px solid rgba(180,83,9,0.22); border-radius: var(--radius-lg); padding: .75rem 1.1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 10px; font-size: 12px; color: #b45309; font-family: var(--font-mono); font-weight: 700; }
+
+    /* MAIN GRID */
+    .tracker-grid { display: grid; grid-template-columns: 1fr 380px; gap: 1.25rem; align-items: start; }
+
+    /* ─── TABS ─── */
+    .mode-tabs { display: flex; gap: 0; margin-bottom: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; border: 1px solid var(--border); border-bottom: none; }
+    .mode-tab { flex: 1; padding: 12px 16px; font-size: 12px; font-weight: 700; font-family: var(--font-mono); text-align: center; cursor: pointer; border: none; transition: all .2s; background: var(--bg-3); color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .mode-tab.active { background: var(--bg-card); color: var(--blue); border-bottom: 2px solid var(--blue); }
+    .mode-tab:hover:not(.active) { background: var(--bg-2); color: var(--text-sub); }
+
+    /* ─── CAMERA CARD ─── */
+    .camera-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0 0 var(--radius-xl) var(--radius-xl); border-top: none; overflow: hidden; box-shadow: 0 4px 16px rgba(11,155,188,0.08); }
+
+    /* AI PANEL */
+    .ai-panel { display: block; }
+    .ai-panel.hidden { display: none; }
+
+    /* VIDEO PANEL */
+    .video-panel { display: none; }
+    .video-panel.active { display: block; }
+
+    /* Camera area */
+    .camera-area { width: 100%; aspect-ratio: 16/9; background: #0B1929; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
+    #videoElement { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; }
+    #poseCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    .camera-overlay-top { position: absolute; top: 0; left: 0; right: 0; padding: .875rem 1rem; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to bottom, rgba(8,25,41,0.85), transparent); z-index: 10; }
+    .camera-overlay-bot { position: absolute; bottom: 0; left: 0; right: 0; padding: .875rem 1rem; background: linear-gradient(to top, rgba(8,25,41,0.90), transparent); z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+    .ai-status-pill { display: flex; align-items: center; gap: 7px; background: rgba(8,25,41,0.75); border: 1px solid rgba(11,155,188,0.4); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-family: var(--font-mono); color: #fff; font-weight: 700; backdrop-filter: blur(8px); }
+    .ai-status-pill .dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .ai-status-pill .dot-orange { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .ai-status-pill .dot-red { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+
+    .timer-badge { font-size: 13px; font-family: var(--font-mono); color: #fff; background: rgba(8,25,41,0.75); padding: 5px 11px; border-radius: 7px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(8px); }
+
+    /* FEEDBACK BOX */
+    .feedback-box { flex: 1; background: rgba(8,25,41,0.80); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 7px 12px; backdrop-filter: blur(8px); }
+    .feedback-main { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .feedback-sub { font-size: 10px; font-family: var(--font-mono); color: rgba(255,255,255,0.55); }
+    .feedback-box.ok .feedback-main { color: #4ade80; }
+    .feedback-box.warn .feedback-main { color: #fbbf24; }
+    .feedback-box.error .feedback-main { color: #f87171; }
+
+    /* ANGLE DISPLAY */
+    .angle-badge { background: rgba(8,25,41,0.80); border: 1px solid rgba(11,155,188,0.4); border-radius: 8px; padding: 6px 12px; text-align: center; backdrop-filter: blur(8px); min-width: 70px; flex-shrink: 0; }
+    .angle-val { font-size: 20px; font-weight: 800; font-family: var(--font-mono); color: var(--blue-bright); line-height: 1; }
+    .angle-label { font-size: 9px; font-family: var(--font-mono); color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+
+    /* REP FLASH */
+    .rep-flash { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); font-size: 4rem; font-weight: 800; color: #4ade80; text-shadow: 0 0 30px #22c55e; z-index: 20; pointer-events: none; transition: all .15s; }
+    .rep-flash.show { transform: translate(-50%,-50%) scale(1.2); }
+
+    /* CAMERA START PLACEHOLDER */
+    .cam-placeholder { text-align: center; padding: 2.5rem; z-index: 5; position: relative; }
+    .cam-placeholder-icon { width: 72px; height: 72px; border-radius: 18px; background: rgba(11,155,188,0.15); border: 1px solid rgba(11,155,188,0.3); display: grid; place-items: center; font-size: 28px; color: var(--blue-bright); margin: 0 auto 1.25rem; }
+    .cam-placeholder-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: .5rem; }
+    .cam-placeholder-desc { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 1.5rem; line-height: 1.6; max-width: 320px; }
+    .btn-start-cam { display: inline-flex; align-items: center; gap: 9px; background: var(--blue); color: #fff; font-family: var(--font-body); font-weight: 800; font-size: 14px; padding: 13px 28px; border-radius: var(--radius); border: none; cursor: pointer; transition: all .25s; box-shadow: 0 4px 20px rgba(11,155,188,.35); -webkit-tap-highlight-color: transparent; }
+    .btn-start-cam:hover { background: var(--blue-bright); box-shadow: 0 6px 30px rgba(11,155,188,.5); transform: translateY(-1px); }
+    .btn-start-cam:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* LOADING SPINNER */
+    .loading-ring { display: none; width: 48px; height: 48px; border: 4px solid rgba(11,155,188,0.15); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 1rem; }
+    .loading-ring.active { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* CARD FOOTER */
+    .camera-card-footer { padding: .875rem 1.1rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(11,155,188,0.02); }
+    .camera-footer-label { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
+    .camera-footer-label strong { color: var(--white); }
+    .cam-btn-row { display: flex; gap: 7px; }
+    .cam-btn { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 14px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 11px; cursor: pointer; transition: all .2s; text-decoration: none; font-weight: 700; -webkit-tap-highlight-color: transparent; }
+    .cam-btn:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
+    .cam-btn--danger:hover { border-color: rgba(217,0,30,.35); color: var(--danger); background: rgba(217,0,30,.07); }
+
+    /* VIDEO GUIDE PANEL */
+    .video-area { width: 100%; aspect-ratio: 16/9; background: #000; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+    .video-area iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+
+    /* GUIDE STEPS */
+    .guide-steps { padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 8px; }
+    .guide-step { display: flex; align-items: flex-start; gap: 11px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); transition: border-color .2s; }
+    .guide-step.active { border-color: var(--border-accent); background: var(--blue-dim); }
+    .guide-step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--blue-dim); border: 1px solid var(--border-accent); display: grid; place-items: center; font-size: 10px; font-family: var(--font-mono); color: var(--blue); font-weight: 800; flex-shrink: 0; }
+    .guide-step.active .guide-step-num { background: var(--blue); color: #fff; }
+    .guide-step-text { font-size: 12px; color: var(--text-sub); line-height: 1.55; }
+
+    /* ─── CONTROLS COL ─── */
+    .controls-col { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* EXERCISE INFO CARD */
+    .exercise-info-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 2px 8px rgba(11,155,188,0.06); }
+    .ex-info-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; gap: 11px; align-items: flex-start; background: rgba(11,155,188,0.03); }
+    .ex-info-icon { width: 42px; height: 42px; background: var(--blue-dim); border: 1px solid var(--border-accent); border-radius: 10px; display: grid; place-items: center; color: var(--blue); font-size: 18px; flex-shrink: 0; }
+    .ex-info-cat { font-size: 10px; font-family: var(--font-mono); color: var(--blue); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 3px; font-weight: 700; }
+    .ex-info-name { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; color: var(--white); }
+    .ex-info-body { padding: 1rem 1.25rem; }
+    .ex-spec-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: .875rem; }
+    .ex-spec { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px; text-align: center; }
+    .ex-spec-val { font-size: 1.2rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); letter-spacing: -0.4px; }
+    .ex-spec-label { font-size: 9px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; font-weight: 700; }
+    .ex-progress-bar-wrap { background: var(--bg-3); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 5px; border: 1px solid var(--border); }
+    .ex-progress-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); transition: width .4s ease; }
+    .ex-progress-foot { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 700; }
+
+    /* TIMER CARD */
+    .timer-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 1.25rem; text-align: center; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(11,155,188,0.06); }
+    .timer-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+    .timer-label { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 7px; font-weight: 700; }
+    .timer-display { font-size: clamp(2.4rem, 6vw, 3.2rem); font-weight: 800; font-family: var(--font-mono); letter-spacing: -2px; color: var(--white); line-height: 1; margin-bottom: 1rem; }
+    .timer-display.running { color: var(--blue); text-shadow: 0 2px 16px rgba(11,155,188,0.22); }
+    .timer-display.paused { color: #b45309; }
+    .timer-btn-row { display: flex; gap: 7px; justify-content: center; }
+    .timer-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius); font-family: var(--font-body); font-size: 13px; font-weight: 700; border: none; cursor: pointer; transition: all .25s; -webkit-tap-highlight-color: transparent; }
+    .timer-btn-start { background: var(--blue); color: #fff; box-shadow: 0 4px 14px rgba(11,155,188,.25); }
+    .timer-btn-start:hover { background: var(--blue-bright); }
+    .timer-btn-reset { background: transparent; color: var(--text-muted); border: 1px solid var(--border); font-weight: 600; }
+    .timer-btn-reset:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
+
+    /* REPS CARD */
+    .reps-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 1.25rem; box-shadow: 0 2px 8px rgba(11,155,188,0.06); }
+    .reps-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .reps-title { font-size: 13px; font-weight: 800; color: var(--white); }
+    .set-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+    .set-badge { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border); display: grid; place-items: center; font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); cursor: pointer; transition: all .2s; font-weight: 700; }
+    .set-badge.done { background: var(--blue-dim); border-color: var(--border-accent); color: var(--blue); }
+    .set-badge.active { background: var(--blue); border-color: var(--blue); color: #fff; box-shadow: 0 3px 12px rgba(11,155,188,.35); }
+    .reps-counter { display: flex; align-items: center; justify-content: center; gap: .875rem; margin-bottom: .875rem; }
+    .rep-btn { width: 52px; height: 52px; border-radius: 12px; border: none; cursor: pointer; font-size: 1.5rem; display: grid; place-items: center; transition: all .2s; font-weight: 800; -webkit-tap-highlight-color: transparent; }
+    .rep-dec { background: var(--bg-3); color: var(--text-sub); border: 1px solid var(--border); }
+    .rep-dec:hover { background: rgba(217,0,30,.10); color: var(--danger); border-color: rgba(217,0,30,.25); }
+    .rep-dec:active { transform: scale(.88); }
+    .rep-inc { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--border-accent); }
+    .rep-inc:hover { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(11,155,188,.30); }
+    .rep-inc:active { transform: scale(.88); }
+    .rep-count { font-size: clamp(3rem, 8vw, 4rem); font-weight: 800; font-family: var(--font-mono); color: var(--white); letter-spacing: -3px; min-width: 80px; text-align: center; line-height: 1; }
+    .rep-target { font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); text-align: center; margin-bottom: 1rem; font-weight: 600; }
+    .rep-target span { color: var(--blue); font-weight: 800; }
+    .rep-pip-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-bottom: .875rem; }
+    .rep-pip { width: 13px; height: 13px; border-radius: 3px; background: var(--bg-3); border: 1px solid var(--border); transition: all .2s; }
+    .rep-pip.done { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 5px rgba(11,155,188,.30); }
+    .rep-pip.current { background: rgba(11,155,188,.25); border-color: var(--border-accent); }
+
+    /* AI INFO BOX */
+    .ai-info-box { background: var(--blue-dim); border: 1px solid var(--border-accent); border-radius: var(--radius); padding: 10px 13px; margin-bottom: .875rem; display: flex; align-items: flex-start; gap: 10px; }
+    .ai-info-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .ai-info-text { font-size: 11px; color: var(--text-sub); line-height: 1.55; font-family: var(--font-mono); font-weight: 600; }
+    .ai-info-text span { color: var(--blue); font-weight: 800; }
+
+    /* ACCURACY CARD */
+    .accuracy-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 1.25rem; box-shadow: 0 2px 8px rgba(11,155,188,0.06); }
+    .accuracy-title { font-size: 13px; font-weight: 800; margin-bottom: .875rem; color: var(--white); }
+    .accuracy-display { display: flex; align-items: center; gap: 1rem; margin-bottom: .875rem; }
+    .accuracy-ring { position: relative; width: 66px; height: 66px; flex-shrink: 0; }
+    .accuracy-ring svg { transform: rotate(-90deg); }
+    .ring-track-s { fill: none; stroke: var(--bg-3); stroke-width: 7; }
+    .ring-fill-s { fill: none; stroke: var(--blue); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 175; transition: stroke-dashoffset .5s ease; filter: drop-shadow(0 0 4px var(--blue-glow)); }
+    .acc-val { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; font-family: var(--font-mono); color: var(--blue); }
+    .acc-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+    /* FINISH & NEXT SET */
+    .next-set-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; background: var(--blue-dim); border: 1px solid var(--border-accent); color: var(--blue); padding: 11px; border-radius: var(--radius); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .25s; font-family: var(--font-body); margin-bottom: .75rem; -webkit-tap-highlight-color: transparent; }
+    .next-set-btn:hover:not(:disabled) { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(11,155,188,.30); }
+    .next-set-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .finish-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; background: var(--blue); color: #fff; padding: 13px; border-radius: var(--radius-lg); font-size: 15px; font-weight: 800; cursor: pointer; border: none; transition: all .25s; box-shadow: 0 4px 20px rgba(11,155,188,.30); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+    .finish-btn:hover { background: var(--blue-bright); box-shadow: 0 8px 30px rgba(11,155,188,.45); transform: translateY(-1px); }
+
+    /* MODAL */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(8,28,43,0.55); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.25rem; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border-accent); border-radius: var(--radius-xl); padding: 2rem; max-width: 440px; width: 100%; position: relative; overflow: hidden; box-shadow: 0 30px 80px rgba(11,155,188,0.20); max-height: 90vh; overflow-y: auto; }
+    .modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+    .modal-icon { width: 56px; height: 56px; border-radius: 14px; background: var(--blue-dim); border: 1px solid var(--border-accent); display: grid; place-items: center; font-size: 22px; color: var(--blue); margin: 0 auto 1rem; }
+    .modal-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin-bottom: .375rem; color: var(--white); }
+    .modal-sub { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 1.5rem; }
+    .modal-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: .6rem; margin-bottom: 1.25rem; }
+    .modal-stat { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .875rem; text-align: center; }
+    .modal-stat-val { font-size: 1.5rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); letter-spacing: -1px; }
+    .modal-stat-label { font-size: 9px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; font-weight: 700; }
+    .modal-accuracy-row { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .875rem 1.1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .modal-acc-label { font-size: 13px; color: var(--text-sub); font-weight: 600; }
+    .modal-acc-val { font-size: 1.4rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); }
+    .modal-buttons { display: flex; flex-direction: column; gap: .6rem; }
+    .btn-full-primary { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--blue); color: #fff; font-family: var(--font-body); font-weight: 800; font-size: 15px; padding: 13px; border-radius: var(--radius); border: none; cursor: pointer; transition: all .25s; box-shadow: 0 4px 18px rgba(11,155,188,.28); text-decoration: none; }
+    .btn-full-primary:hover { background: var(--blue-bright); }
+    .btn-full-ghost { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: var(--text-sub); font-family: var(--font-body); font-weight: 600; font-size: 13px; padding: 11px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; transition: all .25s; text-decoration: none; }
+    .btn-full-ghost:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
+
+    /* AI ALERT TOAST */
+    .ai-toast { position: fixed; top: calc(var(--nav-h) + 14px); left: 50%; transform: translateX(-50%) translateY(-10px); z-index: 300; min-width: 280px; max-width: 450px; background: rgba(8,25,41,0.92); border: 1px solid rgba(11,155,188,0.4); border-radius: var(--radius-lg); padding: 12px 18px; font-size: 13px; color: #fff; font-weight: 700; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(16px); opacity: 0; transition: all .3s; pointer-events: none; }
+    .ai-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .ai-toast.warn { border-color: rgba(251,191,36,0.5); }
+    .ai-toast.warn .toast-icon { color: #fbbf24; }
+    .ai-toast.good { border-color: rgba(74,222,128,0.5); }
+    .ai-toast.good .toast-icon { color: #4ade80; }
+    .ai-toast.info { border-color: rgba(11,155,188,0.5); }
+    .ai-toast.info .toast-icon { color: var(--blue-bright); }
+    .toast-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* KEYBOARD HINT */
+    .kb-hint { display: flex; gap: 10px; flex-wrap: wrap; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--border); }
+    .kb-key { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
+    .kb-key kbd { display: inline-block; padding: 2px 7px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--white); }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .tracker-grid { grid-template-columns: 1fr; }
+      .controls-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .exercise-info-card { grid-column: span 2; }
+      .finish-btn-wrap { grid-column: span 2; }
+      .kb-hint { display: none; }
+    }
+    @media (max-width: 768px) { .nav { padding: 0 1rem; } .nav__session-info { display: none; } .inner { padding: 0 1rem; } }
+    @media (max-width: 600px) { .controls-col { display: flex; flex-direction: column; } .camera-area { aspect-ratio: 4/3; } .timer-display { font-size: 2.6rem; } .rep-count { font-size: 3rem; } .rep-btn { width: 46px; height: 46px; } .modal { padding: 1.5rem; } }
   </style>
 </head>
 <body>
-  <div class="bg-orb"></div>
+  <!-- AI TOAST NOTIFICATION -->
+  <div class="ai-toast" id="aiToast">
+    <span class="toast-icon" id="toastIcon">⚠</span>
+    <span id="toastMsg">Postur perlu diperbaiki</span>
+  </div>
 
   <nav class="nav">
     <a href="{{ url_for('main.index') }}" class="nav__brand">
@@ -165,74 +293,165 @@
     </a>
     <div class="nav__session-info">
       <span class="live-dot"></span>
-      <span>Sesi aktif — {{ exercise.name if exercise is mapping else exercise.name }}</span>
+      <span>Sesi aktif &mdash; {{ exercise.name if exercise is mapping else exercise.name }}</span>
     </div>
-    <a href="{{ url_for('sessions.history') }}" style="color:var(--text-sub);text-decoration:none;font-size:13px;font-family:var(--font-mono);font-weight:700;">History →</a>
+    <div class="nav__right">
+      <a href="{{ url_for('sessions.history') }}" class="nav__action-link">History</a>
+    </div>
   </nav>
 
   <div class="page">
     <div class="inner">
+
       {% if dummy_mode %}
-      <div class="dummy-banner">🎭 <strong>Dummy Mode</strong> — Sesi ini tidak akan tersimpan ke database.</div>
+      <div class="dummy-banner">
+        <span style="font-size:14px;">⚠</span>
+        <strong>Dummy Mode</strong> &mdash; Sesi ini tidak akan tersimpan ke database.
+      </div>
       {% endif %}
 
       {% if exercise is mapping %}
         {% set ex_name = exercise.name %}
-        {% set ex_cat = exercise.category %}
+        {% set ex_cat  = exercise.category %}
         {% set ex_sets = exercise.target_sets %}
         {% set ex_reps = exercise.target_reps %}
-        {% set ex_dur = exercise.duration_seconds %}
-        {% set ex_id = exercise.id %}
+        {% set ex_dur  = exercise.duration_seconds %}
+        {% set ex_id   = exercise.id %}
       {% else %}
         {% set ex_name = exercise.name %}
-        {% set ex_cat = exercise.category %}
+        {% set ex_cat  = exercise.category %}
         {% set ex_sets = exercise.target_sets %}
         {% set ex_reps = exercise.target_reps %}
-        {% set ex_dur = exercise.duration_seconds %}
-        {% set ex_id = exercise.id %}
+        {% set ex_dur  = exercise.duration_seconds %}
+        {% set ex_id   = exercise.id %}
       {% endif %}
 
       <div class="tracker-grid">
 
-        <!-- Camera / pose detection area -->
+        <!-- LEFT: Camera / Video -->
         <div>
-          <div class="camera-card">
-            <div class="camera-area" id="cameraArea">
-              <canvas id="poseCanvas"></canvas>
-              <div class="camera-overlay-top">
-                <div class="accuracy-pill">
-                  <span class="live-dot" style="width:6px;height:6px;background:#b45309;box-shadow:0 0 5px rgba(180,83,9,0.5)"></span>
-                  Pose AI: Coming Soon
+          <!-- TABS -->
+          <div class="mode-tabs">
+            <button class="mode-tab active" id="tabAI" onclick="switchTab('ai')">
+              <span id="aiTabDot" style="width:7px;height:7px;border-radius:50%;background:var(--text-muted);flex-shrink:0;"></span>
+              🤖 AI Pose Tracker
+            </button>
+            <button class="mode-tab" id="tabVideo" onclick="switchTab('video')">
+              ▶ Panduan Video
+            </button>
+          </div>
+
+          <!-- AI PANEL -->
+          <div id="aiPanel">
+            <div class="camera-card">
+              <div class="camera-area" id="cameraArea">
+                <!-- Hidden video element for MediaPipe -->
+                <video id="videoElement" playsinline autoplay muted></video>
+                <!-- Canvas for pose overlay -->
+                <canvas id="poseCanvas"></canvas>
+
+                <!-- Overlay TOP -->
+                <div class="camera-overlay-top">
+                  <div class="ai-status-pill" id="aiStatusPill">
+                    <span class="live-dot dot-orange" id="statusDot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px #f59e0b;flex-shrink:0;"></span>
+                    <span id="aiStatusText">Siap — Aktifkan Kamera</span>
+                  </div>
+                  <div class="timer-badge" id="timerDisplay2">00:00</div>
                 </div>
-                <div id="timerDisplay2" style="font-size:14px;font-family:var(--font-mono);color:var(--text-sub);background:rgba(255,255,255,0.85);padding:5px 12px;border-radius:6px;font-weight:700;border:1px solid var(--border)">00:00</div>
+
+                <!-- PLACEHOLDER (shown before camera starts) -->
+                <div class="cam-placeholder" id="camPlaceholder">
+                  <div class="loading-ring" id="loadingRing"></div>
+                  <div id="placeholderContent">
+                    <div class="cam-placeholder-icon">📷</div>
+                    <div class="cam-placeholder-title">Aktifkan AI Pose Tracker</div>
+                    <div class="cam-placeholder-desc">MediaPipe akan melacak postur tubuh Anda secara real-time dan menghitung rep otomatis. Pastikan kamera menghadap seluruh tubuh Anda dari samping.</div>
+                    <button class="btn-start-cam" id="startCamBtn" onclick="startCamera()">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                      Aktifkan Kamera + AI
+                    </button>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;font-family:var(--font-mono);">atau gunakan Manual Counter di kanan</div>
+                  </div>
+                </div>
+
+                <!-- Overlay BOT (hidden until camera active) -->
+                <div class="camera-overlay-bot" id="cameraOverlayBot" style="display:none;">
+                  <div class="feedback-box" id="feedbackBox">
+                    <div class="feedback-main" id="feedbackMain">Mulai gerakan...</div>
+                    <div class="feedback-sub" id="feedbackSub">Luruskan lutut, tahan 2 detik</div>
+                  </div>
+                  <div class="angle-badge">
+                    <div class="angle-val" id="kneeAngleDisplay">--°</div>
+                    <div class="angle-label">Knee Angle</div>
+                  </div>
+                </div>
+
+                <!-- REP FLASH -->
+                <div class="rep-flash" id="repFlash">+1</div>
               </div>
-              <div class="camera-placeholder-inner">
-                <div class="camera-big-icon">◎</div>
-                <div class="camera-status-badge">⚠ Pose Detection — In Development</div>
-                <div class="camera-desc">Deteksi pose berbasis kamera akan tersedia segera. Gunakan tracker manual di sebelah kanan untuk mencatat reps Anda.</div>
-              </div>
-              <div class="camera-overlay-bot">
-                <div class="form-feedback" id="formFeedback">Tracker siap — mulai latihan!</div>
-                <div id="repFlash" style="font-size:2rem;opacity:0;transition:opacity .2s;color:var(--blue)">✓</div>
-              </div>
-            </div>
-            <div class="camera-card-footer">
-              <span style="font-size:13px;font-family:var(--font-mono);color:var(--text-muted);font-weight:600;">Latihan: <strong style="color:var(--white)">{{ ex_name }}</strong></span>
-              <div style="display:flex;gap:8px">
-                <button class="cam-btn" onclick="openFinishModal()">Selesaikan Sesi</button>
-                <a href="{{ url_for('exercises.index') }}" class="cam-btn cam-btn--danger" onclick="return confirm('Batalkan sesi ini?')">✕ Batal</a>
+
+              <div class="camera-card-footer">
+                <div class="camera-footer-label">
+                  Latihan: <strong>{{ ex_name }}</strong>
+                  &nbsp;|&nbsp;
+                  <span id="footerAIStatus" style="color:var(--text-muted);">AI: Standby</span>
+                </div>
+                <div class="cam-btn-row">
+                  <button class="cam-btn" id="stopCamBtn" onclick="stopCamera()" style="display:none;">⏹ Stop Kamera</button>
+                  <button class="cam-btn" onclick="openFinishModal()">✓ Selesaikan</button>
+                  <a href="{{ url_for('exercises.index') }}" class="cam-btn cam-btn--danger" onclick="return confirm('Batalkan sesi ini?')">✕ Batal</a>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Controls column -->
+          <!-- VIDEO PANEL -->
+          <div id="videoPanel" style="display:none;">
+            <div class="camera-card">
+              <div class="video-area">
+                <!-- Knee Extension tutorial video (YouTube embed, no autoplay) -->
+                <iframe
+                  src="https://www.youtube.com/embed/YyvWstG7ygo?rel=0&modestbranding=1"
+                  title="Knee Extension Exercise Guide"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen>
+                </iframe>
+              </div>
+              <div class="guide-steps">
+                <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Langkah-langkah {{ ex_name }}</div>
+                <div class="guide-step active">
+                  <span class="guide-step-num">1</span>
+                  <span class="guide-step-text">Duduk tegak di kursi, punggung menempel sandaran, kaki menggantung bebas di atas lantai.</span>
+                </div>
+                <div class="guide-step">
+                  <span class="guide-step-num">2</span>
+                  <span class="guide-step-text">Perlahan luruskan lutut hingga kaki sejajar dengan lantai. Hitung 2 detik saat naik.</span>
+                </div>
+                <div class="guide-step">
+                  <span class="guide-step-num">3</span>
+                  <span class="guide-step-text">Tahan posisi lurus 2–3 detik. Rasakan kontraksi otot paha depan (quadriceps).</span>
+                </div>
+                <div class="guide-step">
+                  <span class="guide-step-num">4</span>
+                  <span class="guide-step-text">Turunkan kaki kembali perlahan. Hitung 3 detik saat turun. Jangan dibanting.</span>
+                </div>
+                <div class="guide-step">
+                  <span class="guide-step-num">5</span>
+                  <span class="guide-step-text">Istirahat 1 detik, ulangi. Setelah selesai 1 set, istirahat 60 detik, lanjut set berikutnya.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /left col -->
+
+        <!-- RIGHT: Controls -->
         <div class="controls-col">
 
           <!-- Exercise info -->
           <div class="exercise-info-card">
             <div class="ex-info-header">
-              <div class="ex-info-icon">◎</div>
+              <div class="ex-info-icon">⭕</div>
               <div>
                 <div class="ex-info-cat">{{ ex_cat }}</div>
                 <div class="ex-info-name">{{ ex_name }}</div>
@@ -244,9 +463,10 @@
                 <div class="ex-spec"><div class="ex-spec-val">{{ ex_reps }}</div><div class="ex-spec-label">Reps</div></div>
                 <div class="ex-spec"><div class="ex-spec-val">{{ ex_dur }}s</div><div class="ex-spec-label">Durasi</div></div>
               </div>
-              <div id="overallProg">
-                <div class="ex-progress-bar-wrap"><div class="ex-progress-bar" id="overallBar" style="width:0%"></div></div>
-                <div class="ex-progress-foot"><span id="overallLabel">Set 1 dari {{ ex_sets }}</span><span style="color:var(--blue);font-weight:800" id="overallPct">0%</span></div>
+              <div class="ex-progress-bar-wrap"><div class="ex-progress-bar" id="overallBar" style="width:0%"></div></div>
+              <div class="ex-progress-foot">
+                <span id="overallLabel">Set 1 dari {{ ex_sets }}</span>
+                <span style="color:var(--blue);font-weight:800" id="overallPct">0%</span>
               </div>
             </div>
           </div>
@@ -261,20 +481,27 @@
             </div>
           </div>
 
-          <!-- Rep counter -->
+          <!-- Rep Counter -->
           <div class="reps-card">
             <div class="reps-header">
               <div class="reps-title">Rep Counter</div>
               <div class="set-badges" id="setBadges">
                 {% for i in range(ex_sets) %}
-                <div class="set-badge {% if i==0 %}active{% endif %}" id="setbadge{{ i }}" onclick="jumpToSet({{ i }})">{{ i+1 }}</div>
+                <div class="set-badge {% if i == 0 %}active{% endif %}" id="setbadge{{ i }}">{{ i+1 }}</div>
                 {% endfor %}
               </div>
             </div>
+
+            <!-- AI info when camera is active -->
+            <div class="ai-info-box" id="aiInfoBox" style="display:none;">
+              <span class="ai-info-icon">🤖</span>
+              <div class="ai-info-text">AI menghitung rep otomatis via <span>knee angle tracking</span>. Rep dihitung saat lutut lurus &gt;160° dan kembali &lt;100°.</div>
+            </div>
+
             <div class="reps-counter">
-              <button class="rep-dec" onclick="decrementRep()">−</button>
+              <button class="rep-btn rep-dec" onclick="decrementRep()">−</button>
               <div class="rep-count" id="repCount">0</div>
-              <button class="rep-inc" onclick="incrementRep()">+</button>
+              <button class="rep-btn rep-inc" onclick="incrementRep()">+</button>
             </div>
             <div class="rep-target">Rep <span id="currentRep">0</span> dari <span>{{ ex_reps }}</span></div>
             <div class="rep-pip-row" id="pipRow">
@@ -282,34 +509,49 @@
               <div class="rep-pip" id="pip{{ i }}"></div>
               {% endfor %}
             </div>
-            <button class="next-set-btn" id="nextSetBtn" onclick="nextSet()" disabled>Set Selesai — Lanjut Set Berikutnya →</button>
+            <button class="next-set-btn" id="nextSetBtn" onclick="nextSet()" disabled>
+              Set Selesai — Lanjut Set Berikutnya →
+            </button>
             <div class="finish-btn-wrap">
               <button class="finish-btn" onclick="openFinishModal()">🏁 Selesaikan &amp; Simpan Sesi</button>
             </div>
+            <div class="kb-hint">
+              <span class="kb-key"><kbd>Space</kbd> tambah rep</span>
+              <span class="kb-key"><kbd>Bksp</kbd> kurang rep</span>
+              <span class="kb-key"><kbd>T</kbd> timer</span>
+              <span class="kb-key"><kbd>N</kbd> next set</span>
+            </div>
           </div>
 
-          <!-- Manual accuracy -->
+          <!-- Accuracy -->
           <div class="accuracy-card">
-            <div class="accuracy-title">Perkiraan Akurasi (Manual)</div>
+            <div class="accuracy-title">Skor Akurasi Postur</div>
             <div class="accuracy-display">
               <div class="accuracy-ring">
-                <svg width="70" height="70" viewBox="0 0 70 70"><circle class="ring-track-s" cx="35" cy="35" r="28"/><circle class="ring-fill-s" cx="35" cy="35" r="28" id="accRingFill" style="stroke-dashoffset:79"/></svg>
-                <div class="acc-val" id="accValDisplay">55%</div>
+                <svg width="66" height="66" viewBox="0 0 66 66">
+                  <circle class="ring-track-s" cx="33" cy="33" r="28"/>
+                  <circle class="ring-fill-s" cx="33" cy="33" r="28" id="accRingFill" style="stroke-dashoffset:88"/>
+                </svg>
+                <div class="acc-val" id="accValDisplay">50%</div>
               </div>
-              <div class="acc-note">Seberapa nyaman gerakan Anda? Ini akan digunakan sebagai skor akurasi sesi ini. Pose AI akan mengotomatisasi ini segera.</div>
+              <div class="acc-note" id="accNote">AI akan mengupdate skor ini otomatis saat kamera aktif. Atau atur manual di bawah.</div>
             </div>
-            <input type="range" class="accuracy-slider" id="accuracySlider" min="0" max="100" value="55" oninput="updateAccuracy(this.value)"/>
+            <input type="range" style="width:100%;appearance:none;-webkit-appearance:none;height:6px;border-radius:4px;background:var(--bg-3);outline:none;cursor:pointer;border:1px solid var(--border);" id="accuracySlider" min="0" max="100" value="50" oninput="updateAccuracy(this.value, true)"/>
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px;font-weight:600;">
+              <span>0%</span><span>Geser atau biarkan AI</span><span>100%</span>
+            </div>
           </div>
 
-        </div>
-      </div>
-    </div>
-  </div>
+        </div><!-- /controls col -->
+      </div><!-- /tracker-grid -->
 
-  <!-- Finish Modal -->
+    </div><!-- /inner -->
+  </div><!-- /page -->
+
+  <!-- FINISH MODAL -->
   <div class="modal-backdrop" id="finishModal">
     <div class="modal">
-      <div class="modal-confetti" id="modalConfetti">🎉</div>
+      <div class="modal-icon" id="modalIcon">🏁</div>
       <div class="modal-title">Sesi Selesai!</div>
       <div class="modal-sub" id="modalSub">Kerja bagus — Anda telah menyelesaikan {{ ex_name }}.</div>
       <div class="modal-stats">
@@ -319,15 +561,15 @@
       </div>
       <div class="modal-accuracy-row">
         <span class="modal-acc-label">Skor Akurasi Postur</span>
-        <span class="modal-acc-val" id="modalAcc">—</span>
+        <span class="modal-acc-val" id="modalAcc">--</span>
       </div>
       <div class="modal-buttons">
         <form method="POST" action="{{ url_for('sessions.complete', session_id=rehab_session_id) }}" id="finishForm">
-          <input type="hidden" name="reps_completed" id="hiddenReps" value="0"/>
-          <input type="hidden" name="sets_completed" id="hiddenSets" value="0"/>
+          <input type="hidden" name="reps_completed"   id="hiddenReps"     value="0"/>
+          <input type="hidden" name="sets_completed"   id="hiddenSets"     value="0"/>
           <input type="hidden" name="duration_seconds" id="hiddenDuration" value="0"/>
-          <input type="hidden" name="accuracy_score" id="hiddenAccuracy" value="55"/>
-          <button type="submit" class="btn-full-primary">💾 Simpan &amp; Selesai</button>
+          <input type="hidden" name="accuracy_score"   id="hiddenAccuracy" value="50"/>
+          <button type="submit" class="btn-full-primary">▶ Simpan &amp; Selesai</button>
         </form>
         <button class="btn-full-ghost" onclick="closeFinishModal()">Lanjut Latihan</button>
         <a href="{{ url_for('sessions.history') }}" class="btn-full-ghost">Lihat History</a>
@@ -335,162 +577,527 @@
     </div>
   </div>
 
+  <!-- MediaPipe via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
   <script>
-    // ─── State ───────────────────────────────────────────────────────
-    const TARGET_SETS = {{ ex_sets }};
-    const TARGET_REPS = {{ ex_reps }};
-    const TARGET_DUR  = {{ ex_dur }};
-    let currentSet  = 0;
-    let currentReps = 0;
-    let completedSets = 0;
-    let totalReps = 0;
-    let timerSec = 0;
-    let timerRunning = false;
-    let timerInterval = null;
-    let accuracy = 55;
+    // ─── CONSTANTS ───────────────────────────────────────────────────
+      const TARGET_SETS = {{ ex_sets }};
+      const TARGET_REPS = {{ ex_reps }};
+      const TARGET_DUR  = {{ ex_dur }};
+      const EX_CAT      = "{{ ex_cat }}";
 
-    // ─── Timer ───────────────────────────────────────────────────────
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function timerTick(){
-      timerSec++;
-      const m = Math.floor(timerSec/60), s = timerSec%60;
-      const val = pad(m)+':'+pad(s);
-      document.getElementById('timerDisplay').textContent  = val;
-      document.getElementById('timerDisplay2').textContent = val;
-    }
-    function timerToggle(){
-      if(timerRunning){
-        clearInterval(timerInterval); timerRunning=false;
-        document.getElementById('timerDisplay').className='timer-display paused';
-        document.getElementById('timerStartBtn').textContent='▶ Lanjut';
-      } else {
-        timerInterval=setInterval(timerTick,1000); timerRunning=true;
-        document.getElementById('timerDisplay').className='timer-display running';
-        document.getElementById('timerStartBtn').textContent='⏸ Pause';
-      }
-    }
-    function timerReset(){
-      clearInterval(timerInterval); timerRunning=false; timerSec=0;
-      document.getElementById('timerDisplay').textContent='00:00';
-      document.getElementById('timerDisplay2').textContent='00:00';
-      document.getElementById('timerDisplay').className='timer-display';
-      document.getElementById('timerStartBtn').textContent='▶ Mulai';
-    }
+      // ─── STATE ───────────────────────────────────────────────────────
+      let currentSet    = 0;
+      let currentReps   = 0;
+      let completedSets = 0;
+      let totalReps     = 0;
+      let timerSec      = 0;
+      let timerRunning  = false;
+      let timerInterval = null;
+      let accuracy      = 50;
+      let accuracyReadings = [];
 
-    // ─── Rep counter ─────────────────────────────────────────────────
-    function updatePips(){
-      for(let i=0;i<TARGET_REPS;i++){
-        const pip=document.getElementById('pip'+i);
-        if(!pip) continue;
-        pip.className='rep-pip'+(i<currentReps?' done':i===currentReps?' current':'');
+      // AI State
+      let pose          = null;
+      let mpCamera      = null;
+      let cameraActive  = false;
+      let repState      = 'down';
+      let toastTimeout  = null;
+      let lastToastTime = 0;
+
+      // ─── ANGLE SMOOTHING ─────────────────────────────────────────────
+      // Keeps last N angle readings per joint and returns moving average
+      const angleBuffer = { knee: [] };
+      const BUFFER_SIZE = 6; // smooth over 6 frames (~200ms at 30fps)
+
+      function smoothAngle(key, rawAngle) {
+        const buf = angleBuffer[key];
+        buf.push(rawAngle);
+        if (buf.length > BUFFER_SIZE) buf.shift();
+        return buf.reduce((a, b) => a + b, 0) / buf.length;
       }
-      document.getElementById('repCount').textContent=currentReps;
-      document.getElementById('currentRep').textContent=currentReps;
-      document.getElementById('nextSetBtn').disabled = currentReps < TARGET_REPS;
-      if(currentReps===1 && !timerRunning) timerToggle();
-      updateFeedback();
-    }
-    function incrementRep(){
-      if(currentReps >= TARGET_REPS) return;
-      currentReps++;
-      totalReps++;
-      flashRep();
+
+      // ─── BETTER REP STATE MACHINE ────────────────────────────────────
+      // Requires holding a state for MIN_HOLD_FRAMES before transition
+      // Prevents jitter from triggering phantom reps
+      const MIN_HOLD_FRAMES = 5;
+      let stateHoldCount = 0;
+      let pendingState   = null;
+
+      function updateRepState(newState) {
+        if (newState === repState) {
+          stateHoldCount = 0;
+          pendingState = null;
+          return false; // no change
+        }
+        if (newState !== pendingState) {
+          pendingState = newState;
+          stateHoldCount = 0;
+        }
+        stateHoldCount++;
+        if (stateHoldCount >= MIN_HOLD_FRAMES) {
+          repState = newState;
+          stateHoldCount = 0;
+          pendingState = null;
+          return true; // state changed
+        }
+        return false;
+      }
+
+      // ─── TAB SWITCHING ────────────────────────────────────────────────
+      function switchTab(tab) {
+        const tabAI      = document.getElementById('tabAI');
+        const tabVideo   = document.getElementById('tabVideo');
+        const aiPanel    = document.getElementById('aiPanel');
+        const videoPanel = document.getElementById('videoPanel');
+        if (tab === 'ai') {
+          tabAI.classList.add('active');
+          tabVideo.classList.remove('active');
+          aiPanel.style.display = 'block';
+          videoPanel.style.display = 'none';
+        } else {
+          tabVideo.classList.add('active');
+          tabAI.classList.remove('active');
+          aiPanel.style.display = 'none';
+          videoPanel.style.display = 'block';
+        }
+      }
+
+      // ─── TIMER ───────────────────────────────────────────────────────
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function timerTick() {
+        timerSec++;
+        const m = Math.floor(timerSec / 60), s = timerSec % 60;
+        const val = pad(m) + ':' + pad(s);
+        document.getElementById('timerDisplay').textContent  = val;
+        document.getElementById('timerDisplay2').textContent = val;
+      }
+      function timerToggle() {
+        if (timerRunning) {
+          clearInterval(timerInterval); timerRunning = false;
+          document.getElementById('timerDisplay').className = 'timer-display paused';
+          document.getElementById('timerStartBtn').innerHTML = '▶ Lanjut';
+        } else {
+          timerInterval = setInterval(timerTick, 1000); timerRunning = true;
+          document.getElementById('timerDisplay').className = 'timer-display running';
+          document.getElementById('timerStartBtn').innerHTML = '⏸ Pause';
+        }
+      }
+      function timerReset() {
+        clearInterval(timerInterval); timerRunning = false; timerSec = 0;
+        document.getElementById('timerDisplay').textContent  = '00:00';
+        document.getElementById('timerDisplay2').textContent = '00:00';
+        document.getElementById('timerDisplay').className = 'timer-display';
+        document.getElementById('timerStartBtn').innerHTML = '▶ Mulai';
+      }
+
+      // ─── REP COUNTER ─────────────────────────────────────────────────
+      function updatePips() {
+        for (let i = 0; i < TARGET_REPS; i++) {
+          const pip = document.getElementById('pip' + i);
+          if (!pip) continue;
+          pip.className = 'rep-pip' + (i < currentReps ? ' done' : i === currentReps ? ' current' : '');
+        }
+        document.getElementById('repCount').textContent   = currentReps;
+        document.getElementById('currentRep').textContent = currentReps;
+        document.getElementById('nextSetBtn').disabled    = currentReps < TARGET_REPS;
+        if (currentReps === 1 && !timerRunning) timerToggle();
+      }
+      function incrementRep() {
+        if (currentReps >= TARGET_REPS) return;
+        currentReps++; totalReps++;
+        flashRepAnim(); updatePips(); updateOverall();
+      }
+      function decrementRep() {
+        if (currentReps <= 0) return;
+        currentReps--; totalReps = Math.max(0, totalReps - 1);
+        updatePips(); updateOverall();
+      }
+      function flashRepAnim() {
+        const el = document.getElementById('repFlash');
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 400);
+      }
+      function nextSet() {
+        if (currentReps < TARGET_REPS) return;
+        completedSets++;
+        updateSetBadges();
+        if (completedSets >= TARGET_SETS) { openFinishModal(); return; }
+        currentSet  = completedSets;
+        currentReps = 0;
+        repState     = 'down';
+        stateHoldCount = 0;
+        pendingState   = null;
+        angleBuffer.knee = [];
+        updatePips(); updateOverall();
+        showToast('info', '✅', `Set ${completedSets} selesai! Istirahat 60 detik lalu lanjut set ${completedSets + 1}`);
+      }
+      function updateSetBadges() {
+        for (let i = 0; i < TARGET_SETS; i++) {
+          const b = document.getElementById('setbadge' + i);
+          if (!b) continue;
+          if (i < completedSets)       b.className = 'set-badge done';
+          else if (i === completedSets) b.className = 'set-badge active';
+          else                          b.className = 'set-badge';
+        }
+      }
+      function updateOverall() {
+        const totalPossible = TARGET_SETS * TARGET_REPS;
+        const done = completedSets * TARGET_REPS + currentReps;
+        const pct  = Math.round(done / totalPossible * 100);
+        document.getElementById('overallBar').style.width   = pct + '%';
+        document.getElementById('overallPct').textContent   = pct + '%';
+        document.getElementById('overallLabel').textContent = 'Set ' + (completedSets + 1) + ' dari ' + TARGET_SETS;
+      }
+
+      // ─── ACCURACY ────────────────────────────────────────────────────
+      function updateAccuracy(val, fromSlider) {
+        accuracy = parseInt(val);
+        document.getElementById('accValDisplay').textContent = accuracy + '%';
+        document.getElementById('accuracySlider').value      = accuracy;
+        const dashoffset = 175 - (175 * accuracy / 100);
+        document.getElementById('accRingFill').style.strokeDashoffset = dashoffset;
+        const color = accuracy >= 80 ? '#4ade80' : accuracy >= 60 ? 'var(--blue)' : '#fbbf24';
+        document.getElementById('accRingFill').style.stroke = color;
+      }
+      updateAccuracy(50);
+
+      // ─── TOAST ───────────────────────────────────────────────────────
+      function showToast(type, icon, msg, duration = 3500) {
+        const now = Date.now();
+        if (now - lastToastTime < 2000) return;
+        lastToastTime = now;
+        const toast = document.getElementById('aiToast');
+        document.getElementById('toastIcon').textContent = icon;
+        document.getElementById('toastMsg').textContent  = msg;
+        toast.className = 'ai-toast show ' + type;
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.className = 'ai-toast', duration);
+      }
+
+      // ─── ANGLE CALCULATION ───────────────────────────────────────────
+      function calcAngle(a, b, c) {
+        // Vector from B→A and B→C
+        const v1x = a.x - b.x, v1y = a.y - b.y;
+        const v2x = c.x - b.x, v2y = c.y - b.y;
+        const dot  = v1x * v2x + v1y * v2y;
+        const mag1 = Math.sqrt(v1x * v1x + v1y * v1y);
+        const mag2 = Math.sqrt(v2x * v2x + v2y * v2y);
+        if (mag1 === 0 || mag2 === 0) return 0;
+        // Clamp to avoid floating-point domain error in acos
+        const cosAngle = Math.max(-1, Math.min(1, dot / (mag1 * mag2)));
+        return (Math.acos(cosAngle) * 180) / Math.PI;
+      }
+
+      function getBetterSide(landmarks) {
+        const lHip  = landmarks[23], lKnee = landmarks[25], lAnkle = landmarks[27];
+        const rHip  = landmarks[24], rKnee = landmarks[26], rAnkle = landmarks[28];
+        const lVis  = (lHip.visibility + lKnee.visibility + lAnkle.visibility) / 3;
+        const rVis  = (rHip.visibility + rKnee.visibility + rAnkle.visibility) / 3;
+        return lVis >= rVis
+          ? { hip: lHip, knee: lKnee, ankle: lAnkle, vis: lVis, side: 'kiri' }
+          : { hip: rHip, knee: rKnee, ankle: rAnkle, vis: rVis, side: 'kanan' };
+      }
+
+      // ─── MEDIAPIPE POSE CALLBACK ─────────────────────────────────────
+      function onPoseResults(results) {
+        const canvas = document.getElementById('poseCanvas');
+        const video  = document.getElementById('videoElement');
+        const ctx    = canvas.getContext('2d');
+
+        canvas.width  = video.videoWidth  || canvas.offsetWidth;
+        canvas.height = video.videoHeight || canvas.offsetHeight;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // ── DRAW MIRRORED VIDEO FRAME ──
+        // We flip the canvas context here — NOT with CSS on the element.
+        // This keeps coordinate system consistent for landmark drawing.
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        if (results.image) {
+          ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+        }
+        ctx.restore();
+
+        if (!results.poseLandmarks) {
+          setFeedback('warn', 'Postur tidak terdeteksi', 'Pastikan seluruh tubuh terlihat kamera');
+          setAIStatus('orange', 'Mendeteksi...');
+          return;
+        }
+
+        const lm = results.poseLandmarks;
+
+        // ── DRAW SKELETON ──
+        // MediaPipe landmarks are in 0-1 space (x=0 left, x=1 right of raw image).
+        // Since we flipped the video frame above, we need to flip landmarks too
+        // before drawing so the skeleton aligns with the mirrored video.
+        const mirroredLm = lm.map(pt => ({ ...pt, x: 1 - pt.x }));
+
+        drawConnectors(ctx, mirroredLm, POSE_CONNECTIONS, {
+          color: 'rgba(11,155,188,0.8)',
+          lineWidth: 2,
+        });
+        drawLandmarks(ctx, mirroredLm, {
+          color: '#17C5E0',
+          fillColor: 'rgba(11,155,188,0.4)',
+          lineWidth: 1,
+          radius: 4,
+        });
+
+        const { hip, knee, ankle, vis, side } = getBetterSide(lm);
+
+        if (vis < 0.4) {
+          setFeedback('warn', 'Visibilitas rendah', 'Pindah ke tempat lebih terang');
+          setAIStatus('orange', 'Visibilitas rendah');
+          return;
+        }
+
+        // ── COMPUTE & SMOOTH ANGLE ──
+        const rawAngle    = calcAngle(hip, knee, ankle);
+        const kneeAngle   = smoothAngle('knee', rawAngle);
+
+        document.getElementById('kneeAngleDisplay').textContent = Math.round(kneeAngle) + '°';
+
+        // ── HIGHLIGHT JOINT ON MIRRORED CANVAS ──
+        // Use mirrored x = (1 - knee.x) to match the flipped video frame
+        highlightKneeJoint(ctx, knee, kneeAngle, canvas.width, canvas.height);
+
+        // ── REP DETECTION with hysteresis ──
+        // Knee Extension: start bent (~70-100°), extend to ~160°+, return to bent
+        const EXTEND_THRESH = 158; // angle to register as "up" (extended)
+        const BEND_THRESH   = 100; // angle to register as "down" (bent again)
+        // Hysteresis: different thresholds for going up vs coming down
+        // prevents triggering at the same borderline value repeatedly
+
+        if (repState === 'down') {
+          if (kneeAngle > EXTEND_THRESH) {
+            const changed = updateRepState('up');
+            if (changed) {
+              setFeedback('ok', `Lutut ${side} lurus — tahan!`, `${Math.round(kneeAngle)}° ✓`);
+              setAIStatus('green', 'Postur OK');
+            }
+          } else if (kneeAngle > BEND_THRESH) {
+            setFeedback('ok', 'Luruskan kaki...', `Angle: ${Math.round(kneeAngle)}° (target >158°)`);
+          } else {
+            setFeedback('ok', 'Siap — angkat kaki untuk mulai', `Lutut ${side} terdeteksi`);
+            setAIStatus('green', 'AI Aktif');
+          }
+        } else if (repState === 'up') {
+          if (kneeAngle < BEND_THRESH) {
+            const changed = updateRepState('down');
+            if (changed && currentReps < TARGET_REPS) {
+              incrementRep();
+              showToast('good', '✅', `Rep ${currentReps}! Angle: ${Math.round(kneeAngle)}°`);
+              setFeedback('ok', 'Rep dihitung! Luruskan lagi.', `${currentReps} / ${TARGET_REPS} rep`);
+            }
+          } else if (kneeAngle < 165) {
+            setFeedback('warn', 'Luruskan lebih maksimal!', `${Math.round(kneeAngle)}° — target >158°`);
+            setAIStatus('orange', 'Perlu diperbaiki');
+          } else {
+            setFeedback('ok', 'Bagus! Tahan 2 detik...', `${Math.round(kneeAngle)}°`);
+            setAIStatus('green', 'Postur OK');
+          }
+        }
+
+        // ── UPDATE ACCURACY from landmark confidence ──
+        const avgConf  = (hip.visibility + knee.visibility + ankle.visibility) / 3;
+        const rawScore = Math.round(avgConf * 100);
+        const smoothed = Math.round((accuracy * 0.85) + (rawScore * 0.15));
+        const clamped  = Math.max(40, Math.min(100, smoothed));
+        if (cameraActive) {
+          accuracyReadings.push(clamped);
+          const avg = Math.round(accuracyReadings.reduce((a, b) => a + b, 0) / accuracyReadings.length);
+          updateAccuracy(Math.max(40, Math.min(100, avg)), false);
+        }
+      }
+
+      function highlightKneeJoint(ctx, knee, angle, w, h) {
+        // Mirror x to match the flipped canvas
+        const x = (1 - knee.x) * w;
+        const y = knee.y * h;
+
+        const color = angle > 155 ? '#4ade80' : angle > 110 ? '#fbbf24' : '#f87171';
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, 20, 0, Math.PI * 2);
+        ctx.fillStyle = color + '33';
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.font      = 'bold 11px JetBrains Mono, monospace';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(Math.round(angle) + '°', x, y);
+        ctx.restore();
+      }
+
+      function setFeedback(type, main, sub) {
+        document.getElementById('feedbackBox').className    = 'feedback-box ' + type;
+        document.getElementById('feedbackMain').textContent = main;
+        document.getElementById('feedbackSub').textContent  = sub;
+      }
+
+      function setAIStatus(color, text) {
+        const dot    = document.getElementById('statusDot');
+        const txt    = document.getElementById('aiStatusText');
+        const foot   = document.getElementById('footerAIStatus');
+        const tabDot = document.getElementById('aiTabDot');
+        txt.textContent  = text;
+        foot.textContent = 'AI: ' + text;
+        const colors = { green: '#22c55e', orange: '#f59e0b', red: '#f87171', blue: '#17C5E0' };
+        const c = colors[color] || colors.blue;
+        dot.style.background   = c;
+        dot.style.boxShadow    = `0 0 6px ${c}`;
+        tabDot.style.background = c;
+        tabDot.style.boxShadow  = `0 0 6px ${c}`;
+      }
+
+      // ─── CAMERA CONTROL ──────────────────────────────────────────────
+      async function startCamera() {
+        const btn    = document.getElementById('startCamBtn');
+        const ring   = document.getElementById('loadingRing');
+        const pHolder = document.getElementById('placeholderContent');
+
+        btn.disabled    = true;
+        btn.textContent = 'Memuat MediaPipe AI...';
+        ring.classList.add('active');
+        pHolder.style.opacity = '0.5';
+
+        try {
+          pose = new Pose({
+            locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+          });
+
+          pose.setOptions({
+            modelComplexity: 2,          // ← bumped from 1 to 2 for better joint detection
+            smoothLandmarks: true,
+            enableSegmentation: false,
+            smoothSegmentation: false,
+            minDetectionConfidence: 0.6, // ← slightly higher to reduce false positives
+            minTrackingConfidence: 0.6,
+          });
+
+          pose.onResults(onPoseResults);
+
+          const video  = document.getElementById('videoElement');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720, facingMode: 'user' },
+            audio: false,
+          });
+          video.srcObject = stream;
+          video.style.display = 'none'; // hide raw video — we draw it on canvas ourselves
+
+          document.getElementById('camPlaceholder').style.display   = 'none';
+          document.getElementById('cameraOverlayBot').style.display = 'flex';
+          document.getElementById('aiInfoBox').style.display        = 'flex';
+          document.getElementById('stopCamBtn').style.display       = 'block';
+          ring.classList.remove('active');
+          cameraActive = true;
+
+          setAIStatus('green', 'AI Aktif');
+          showToast('info', '🤖', 'AI aktif! Duduk menyamping agar lutut terlihat jelas.');
+
+          mpCamera = new Camera(video, {
+            onFrame: async () => {
+              if (cameraActive && pose) await pose.send({ image: video });
+            },
+            width: 1280,
+            height: 720,
+          });
+          mpCamera.start();
+
+        } catch (err) {
+          ring.classList.remove('active');
+          btn.disabled = false;
+          pHolder.style.opacity = '1';
+
+          if (err.name === 'NotAllowedError') {
+            btn.textContent = '⚠ Kamera ditolak — izinkan akses';
+            showToast('warn', '⚠', 'Izin kamera ditolak. Gunakan tracker manual.');
+          } else if (err.name === 'NotFoundError') {
+            btn.textContent = '⚠ Kamera tidak ditemukan';
+            showToast('warn', '⚠', 'Tidak ada kamera. Gunakan tracker manual.');
+          } else {
+            btn.textContent = '⚠ Error — coba lagi';
+            btn.disabled    = false;
+            showToast('warn', '⚠', 'Gagal memuat AI: ' + err.message);
+            console.error('Camera/MediaPipe error:', err);
+          }
+        }
+      }
+
+      function stopCamera() {
+        if (mpCamera) { mpCamera.stop(); mpCamera = null; }
+        const video = document.getElementById('videoElement');
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(t => t.stop());
+          video.srcObject = null;
+        }
+        cameraActive = false;
+
+        const canvas = document.getElementById('poseCanvas');
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+        document.getElementById('camPlaceholder').style.display   = 'flex';
+        document.getElementById('cameraOverlayBot').style.display = 'none';
+        document.getElementById('aiInfoBox').style.display        = 'none';
+        document.getElementById('stopCamBtn').style.display       = 'none';
+        document.getElementById('placeholderContent').style.opacity = '1';
+
+        const btn = document.getElementById('startCamBtn');
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg> Aktifkan Kamera + AI`;
+
+        setAIStatus('orange', 'Kamera dimatikan');
+      }
+
+      // ─── FINISH MODAL ────────────────────────────────────────────────
+      function openFinishModal() {
+        if (timerRunning) timerToggle();
+        if (cameraActive) stopCamera();
+        const setsCount = Math.max(completedSets, currentReps > 0 ? 1 : 0);
+        document.getElementById('modalReps').textContent = totalReps;
+        document.getElementById('modalSets').textContent = setsCount;
+        document.getElementById('modalTime').textContent = document.getElementById('timerDisplay').textContent;
+        document.getElementById('modalAcc').textContent  = accuracy + '%';
+        document.getElementById('hiddenReps').value      = totalReps;
+        document.getElementById('hiddenSets').value      = setsCount;
+        document.getElementById('hiddenDuration').value  = timerSec;
+        document.getElementById('hiddenAccuracy').value  = accuracy;
+        document.getElementById('modalIcon').textContent = accuracy >= 80 ? '⭐' : '🏁';
+        document.getElementById('finishModal').classList.add('open');
+      }
+      function closeFinishModal() {
+        document.getElementById('finishModal').classList.remove('open');
+      }
+      document.getElementById('finishModal').addEventListener('click', function(e) {
+        if (e.target === this) closeFinishModal();
+      });
+
+      // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
+      document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.code === 'Space')     { e.preventDefault(); incrementRep(); }
+        if (e.code === 'Backspace') { e.preventDefault(); decrementRep(); }
+        if (e.code === 'KeyT')      { timerToggle(); }
+        if (e.code === 'KeyN')      { if (currentReps >= TARGET_REPS) nextSet(); }
+        if (e.code === 'KeyF')      { openFinishModal(); }
+      });
+
+      // ─── INIT ────────────────────────────────────────────────────────
       updatePips();
       updateOverall();
-    }
-    function decrementRep(){
-      if(currentReps <= 0) return;
-      currentReps--;
-      totalReps=Math.max(0,totalReps-1);
-      updatePips();
-      updateOverall();
-    }
-    function flashRep(){
-      const el=document.getElementById('repFlash');
-      el.style.opacity='1'; el.style.transform='scale(1.5)';
-      setTimeout(()=>{ el.style.opacity='0'; el.style.transform='scale(1)'; el.style.transition='all .3s'; },300);
-    }
-    function jumpToSet(idx){
-      if(idx <= completedSets){ /* re-visit completed set — view only */ }
-    }
-    function nextSet(){
-      if(currentReps < TARGET_REPS) return;
-      completedSets++;
       updateSetBadges();
-      if(completedSets >= TARGET_SETS){ openFinishModal(); return; }
-      currentSet = completedSets;
-      currentReps = 0;
-      updatePips();
-      updateOverall();
-      updateFeedback();
-    }
-    function updateSetBadges(){
-      for(let i=0;i<TARGET_SETS;i++){
-        const b=document.getElementById('setbadge'+i);
-        if(!b) continue;
-        if(i < completedSets) b.className='set-badge done';
-        else if(i === completedSets) b.className='set-badge active';
-        else b.className='set-badge';
-      }
-    }
-    function updateOverall(){
-      const totalPossible = TARGET_SETS * TARGET_REPS;
-      const done = completedSets * TARGET_REPS + currentReps;
-      const pct = Math.round(done/totalPossible*100);
-      document.getElementById('overallBar').style.width=pct+'%';
-      document.getElementById('overallPct').textContent=pct+'%';
-      document.getElementById('overallLabel').textContent='Set '+(completedSets+1)+' dari '+TARGET_SETS;
-    }
-    function updateFeedback(){
-      const msgs=['Posisi awal stabil!','Lakukan gerakan perlahan.','Tahan 2–3 detik di puncak!','Napas teratur — hembuskan saat exertion.','Target reps hampir tercapai!'];
-      const idx=Math.min(Math.floor(currentReps/Math.max(TARGET_REPS/msgs.length,1)),msgs.length-1);
-      document.getElementById('formFeedback').textContent=msgs[idx];
-    }
-
-    // ─── Accuracy slider ─────────────────────────────────────────────
-    function updateAccuracy(val){
-      accuracy=parseInt(val);
-      document.getElementById('accValDisplay').textContent=accuracy+'%';
-      const dashoffset = 175 - (175 * accuracy / 100);
-      document.getElementById('accRingFill').style.strokeDashoffset=dashoffset;
-    }
-    updateAccuracy(55);
-
-    // ─── Finish modal ────────────────────────────────────────────────
-    function openFinishModal(){
-      if(timerRunning) timerToggle();
-      document.getElementById('modalReps').textContent = totalReps;
-      document.getElementById('modalSets').textContent = Math.max(completedSets, currentReps>0?1:0);
-      document.getElementById('modalTime').textContent = document.getElementById('timerDisplay').textContent;
-      document.getElementById('modalAcc').textContent = accuracy+'%';
-      document.getElementById('hiddenReps').value = totalReps;
-      document.getElementById('hiddenSets').value = Math.max(completedSets, currentReps>0?1:0);
-      document.getElementById('hiddenDuration').value = timerSec;
-      document.getElementById('hiddenAccuracy').value = accuracy;
-      const acc=accuracy;
-      document.getElementById('modalConfetti').textContent = acc>=90?'🌟':acc>=75?'🎉':acc>=50?'💪':'🔄';
-      document.getElementById('finishModal').classList.add('open');
-    }
-    function closeFinishModal(){
-      document.getElementById('finishModal').classList.remove('open');
-      if(!timerRunning) timerToggle();
-    }
-    document.getElementById('finishModal').addEventListener('click', function(e){ if(e.target===this) closeFinishModal(); });
-
-    // ─── Init ────────────────────────────────────────────────────────
-    updatePips();
-    updateOverall();
-    updateSetBadges();
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e){
-      if(e.target.tagName==='INPUT') return;
-      if(e.code==='Space'){ e.preventDefault(); incrementRep(); }
-      if(e.code==='Backspace'){ e.preventDefault(); decrementRep(); }
-      if(e.code==='KeyT'){ timerToggle(); }
-      if(e.code==='KeyN'){ if(currentReps>=TARGET_REPS) nextSet(); }
-      if(e.code==='KeyF'){ openFinishModal(); }
-    });
   </script>
 </body>
 </html>

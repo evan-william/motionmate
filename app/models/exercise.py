@@ -1,5 +1,5 @@
 """
-Core domain models: Exercise, RehabSession, Progress.
+Core domain models: Exercise, RehabSession, Progress, GameSession.
 """
 
 from datetime import datetime
@@ -83,4 +83,28 @@ class Progress(db.Model):
             "total_reps": self.total_reps,
             "avg_accuracy": self.avg_accuracy,
             "streak_days": self.streak_days,
+        }
+
+
+class GameSession(db.Model):
+    __tablename__ = "game_sessions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    game_type = db.Column(db.String(50), nullable=False)
+    difficulty = db.Column(db.String(20), nullable=False)
+    score = db.Column(db.Integer, default=0)
+    max_score = db.Column(db.Integer, default=0)
+    accuracy = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "game_type": self.game_type,
+            "difficulty": self.difficulty,
+            "score": self.score,
+            "max_score": self.max_score,
+            "accuracy": self.accuracy,
+            "created_at": self.created_at.isoformat(),
         }

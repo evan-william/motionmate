@@ -14,6 +14,12 @@ def about():
     return render_template("about.html")
 
 
+@main_bp.route("/wip")
+def wip():
+    """Work-in-progress page for features under development."""
+    return render_template("wip.html")
+
+
 @main_bp.route("/dummy/enable")
 def enable_dummy():
     """Enable dummy data mode — simulate a logged-in demo user."""
