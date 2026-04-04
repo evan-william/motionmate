@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MotionMate — AI-Powered Home Rehabilitation</title>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
   <meta name="theme-color" content="#18B8D6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -506,8 +506,7 @@
 <!-- NAV -->
 <nav class="nav" id="mainNav">
   <a href="{{ url_for('main.index') }}" class="nav__brand">
-    <span class="nav__logo-mark">M</span>
-    <span class="nav__logo-text">MotionMate</span>
+    <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="MotionMate" style="height: 40px; width: auto;">
   </a>
   <div class="nav__links">
     <a href="#how" class="nav__link">How it Works</a>
@@ -1188,7 +1187,7 @@
   <div class="footer-inner">
     <div class="footer-top">
       <div>
-        <a href="{{ url_for('main.index') }}" class="footer-logo"><span class="footer-logo-mark">M</span><span style="font-weight:700;font-size:14px;">MotionMate</span></a>
+        <a href="{{ url_for('main.index') }}" class="footer-logo"><img src="{{ url_for('static', filename='assets/logo.png') }}" alt="MotionMate" style="height: 36px; width: auto;"></a>
         <div class="footer-tagline">Platform rehabilitasi rumahan berbasis AI yang membuat panduan fisioterapi berkualitas bisa diakses semua orang Indonesia.</div>
         <div style="margin-top:1.1rem;display:flex;gap:7px;"><a href="mailto:hello@motionmate.id" class="social-btn">&#9993;</a><a href="#" class="social-btn" style="font-family:var(--font-mono);font-size:10px;font-weight:700;">in</a><a href="#" class="social-btn" style="font-family:var(--font-mono);font-size:10px;font-weight:700;">gh</a></div>
       </div>

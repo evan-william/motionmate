@@ -4,12 +4,22 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Program Terapi , MotionMate</title>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
   <meta name="theme-color" content="#18B8D6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#F4FAFD; --bg-card:#FFFFFF; --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-bright:#17C5E0; --white:#081C2B; --text-muted:#4A789A; --radius-xl:24px; --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; }
+    :root { 
+      --bg:#F4FAFD; --bg-2:#FFFFFF; --bg-3:#E4F2F8; --bg-card:#FFFFFF; 
+      --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); 
+      --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-glow:rgba(11,155,188,0.18); 
+      --blue-bright:#17C5E0; --blue-dark:#087A95; 
+      --white:#081C2B; --white-dim:rgba(8,28,43,0.72); 
+      --text-muted:#4A789A; --text-sub:#1A506A; 
+      --danger:#ff4f5e; --warning:#b45309; --success:#15803d; 
+      --radius:10px; --radius-lg:16px; --radius-xl:24px; 
+      --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; 
+    }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{font-size:16px} body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased}
     .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;position:relative;z-index:2} .inner{max-width:1000px;margin:0 auto;padding:0 1.5rem}
     .page-title{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:800;letter-spacing:-1px;text-align:center;margin-bottom:1rem}
@@ -28,7 +38,7 @@
   </style>
 </head>
 <body>
-  {% set active_page = 'exercises' %}
+  {% set active_page = 'games' %}
   {% include 'partials/nav.html' %}
 
   <div class="page">
