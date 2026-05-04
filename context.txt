@@ -1,38 +1,9 @@
-app.py:
-"""
-MotionMate - AI-Powered Home Rehabilitation Platform
-Entry point.
-"""
-
-import os
-from app import create_app
-
-
-app = create_app()
-
-if __name__ == "__main__":
-    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=debug)
-
-pytest.ini:
-[pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-
-requirements.txt:
-Flask>=3.0.0
-Flask-SQLAlchemy>=3.1.0
-Werkzeug>=3.0.0
-
-
 app/models/__init__.py:
 from .db import db
 from .user import User
-from .exercise import Exercise, RehabSession, Progress
+from .exercise import Exercise, RehabSession, Progress, GameSession
 
-__all__ = ["db", "User", "Exercise", "RehabSession", "Progress"]
+__all__ = ["db", "User", "Exercise", "RehabSession", "Progress", "GameSession"]
 
 app/models/db.py:
 """
@@ -49,9 +20,10 @@ def init_db(app):
     with app.app_context():
         db.create_all()
 
+
 app/models/exercise.py:
 """
-Core domain models: Exercise, RehabSession, Progress.
+Core domain models: Exercise, RehabSession, Progress, GameSession.
 """
 
 from datetime import datetime
@@ -137,6 +109,30 @@ class Progress(db.Model):
             "streak_days": self.streak_days,
         }
 
+
+class GameSession(db.Model):
+    __tablename__ = "game_sessions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    game_type = db.Column(db.String(50), nullable=False)
+    difficulty = db.Column(db.String(20), nullable=False)
+    score = db.Column(db.Integer, default=0)
+    max_score = db.Column(db.Integer, default=0)
+    accuracy = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "game_type": self.game_type,
+            "difficulty": self.difficulty,
+            "score": self.score,
+            "max_score": self.max_score,
+            "accuracy": self.accuracy,
+            "created_at": self.created_at.isoformat(),
+        }
+
 app/models/user.py:
 """
 User model with password hashing and basic profile fields.
@@ -176,12 +172,14 @@ class User(db.Model):
             "created_at": self.created_at.isoformat(),
         }
 
+
 app/routes/__init__.py:
 from .main import main_bp
 from .auth import auth_bp
 from .dashboard import dashboard_bp
 from .exercises import exercises_bp
 from .sessions import sessions_bp
+
 
 app/routes/auth.py:
 """
@@ -281,13 +279,13 @@ def logout():
 
 app/routes/dashboard.py:
 """
-Dashboard routes — user overview, progress stats.
+Dashboard routes , user overview, progress stats.
 """
 
 from flask import Blueprint, render_template
 from ..utils.auth import login_required, current_user_id, is_dummy_mode
 from ..models.user import User
-from ..models.exercise import RehabSession, Progress
+from ..models.exercise import RehabSession, Progress, GameSession
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -298,7 +296,6 @@ def index():
     dummy = is_dummy_mode()
 
     if dummy:
-        # Serve dummy data — no DB queries needed
         return render_template(
             "dashboard/index.html",
             dummy_mode=True,
@@ -308,6 +305,8 @@ def index():
             streak=12,
             recent_sessions=[],
             progress_records=[],
+            memory_scores={'easy': 450, 'medium': 320, 'hard': 150},
+            speech_accuracy=92.5
         )
 
     uid = current_user_id()
@@ -338,6 +337,16 @@ def index():
 
     streak = progress_records[0].streak_days if progress_records else 0
 
+    memory_sessions = GameSession.query.filter_by(user_id=uid, game_type='memory').all()
+    memory_scores = {
+        'easy': max([s.score for s in memory_sessions if s.difficulty == 'easy'] + [0]),
+        'medium': max([s.score for s in memory_sessions if s.difficulty == 'medium'] + [0]),
+        'hard': max([s.score for s in memory_sessions if s.difficulty == 'hard'] + [0])
+    }
+
+    speech_sessions = GameSession.query.filter_by(user_id=uid, game_type='speech').all()
+    speech_accuracy = sum([s.accuracy for s in speech_sessions]) / len(speech_sessions) if speech_sessions else 0.0
+
     return render_template(
         "dashboard/index.html",
         dummy_mode=False,
@@ -347,6 +356,8 @@ def index():
         streak=streak,
         recent_sessions=recent_sessions,
         progress_records=progress_records,
+        memory_scores=memory_scores,
+        speech_accuracy=round(speech_accuracy, 1)
     )
 
 app/routes/exercises.py:
@@ -415,6 +426,61 @@ def detail(exercise_id):
 
     exercise = Exercise.query.filter_by(id=exercise_id, is_active=True).first_or_404()
     return render_template("exercises/detail.html", dummy_mode=False, exercise=exercise)
+
+app/routes/games.py:
+"""
+Games routes for Memory and Speech therapy.
+"""
+
+from flask import Blueprint, render_template, request, jsonify
+from ..utils.auth import login_required, current_user_id, is_dummy_mode
+from ..models.db import db
+from ..models.exercise import GameSession
+
+games_bp = Blueprint("games", __name__)
+
+
+@games_bp.route("/hub")
+@login_required
+def hub():
+    return render_template("games/hub.html", dummy_mode=is_dummy_mode())
+
+
+@games_bp.route("/memory")
+@login_required
+def memory():
+    return render_template("games/memory.html", dummy_mode=is_dummy_mode())
+
+
+@games_bp.route("/speech")
+@login_required
+def speech():
+    return render_template("games/speech.html", dummy_mode=is_dummy_mode())
+
+
+@games_bp.route("/save", methods=["POST"])
+@login_required
+def save():
+    if is_dummy_mode():
+        return jsonify({"status": "ok", "msg": "Dummy mode, not saved"})
+    
+    data = request.get_json(silent=True) or {}
+    uid = current_user_id()
+    
+    session_obj = GameSession(
+        user_id=uid,
+        game_type=data.get("game_type", "unknown"),
+        difficulty=data.get("difficulty", "easy"),
+        score=int(data.get("score", 0)),
+        max_score=int(data.get("max_score", 0)),
+        accuracy=float(data.get("accuracy", 0.0))
+    )
+    
+    db.session.add(session_obj)
+    db.session.commit()
+    
+    return jsonify({"status": "ok", "session_id": session_obj.id})
+
 
 app/routes/main.py:
 from flask import Blueprint, render_template, session, redirect, url_for
@@ -626,6 +692,7 @@ def role_required(*roles):
         return decorated
     return decorator
 
+
 app/utils/validators.py:
 """
 Input validation and sanitization helpers.
@@ -674,6 +741,7 @@ from .routes.auth import auth_bp
 from .routes.dashboard import dashboard_bp
 from .routes.exercises import exercises_bp
 from .routes.sessions import sessions_bp
+from .routes.games import games_bp
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -689,10 +757,11 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
     app.register_blueprint(exercises_bp, url_prefix="/exercises")
     app.register_blueprint(sessions_bp, url_prefix="/sessions")
+    app.register_blueprint(games_bp, url_prefix="/games")
 
     return app
 
-app/config.py:
+app/utils/config.py:
 """
 Configuration classes for different environments.
 """
@@ -740,8 +809,11 @@ def get_config(name: str = None) -> type:
     env = name or os.environ.get("FLASK_ENV", "development")
     return _configs.get(env, DevelopmentConfig)
 
-instace/...
+
+instance/motionmate_dev.db:...
+
 static/assets/...
+static/...
 
 templates/auth/login.html:
 <!DOCTYPE html>
@@ -1277,513 +1349,533 @@ templates/auth/register.html:
 </html>
 
 templates/dashboard/index.html:
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Dashboard — MotionMate</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
-  <meta name="theme-color" content="#18B8D6">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#F4FAFD; --bg-2:#FFFFFF; --bg-3:#E4F2F8; --bg-card:#FFFFFF;
-      --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40);
-      --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-glow:rgba(11,155,188,0.18);
-      --blue-bright:#17C5E0; --blue-dark:#087A95;
-      --white:#081C2B; --white-dim:rgba(8,28,43,0.72);
-      --text-muted:#4A789A; --text-sub:#1A506A;
-      --danger:#ff4f5e; --warning:#b45309; --success:#15803d;
-      --radius:10px; --radius-lg:16px; --radius-xl:24px;
-      --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace;
-      --nav-h:64px;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
-    body {
-      background: var(--bg); color: var(--white);
-      font-family: var(--font-body); min-height: 100vh;
-      -webkit-font-smoothing: antialiased; overflow-x: hidden;
-    }
-    body::before {
-      content: ''; position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      opacity: .06; pointer-events: none; z-index: 0;
-    }
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Dashboard — MotionMate</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-512.svg') }}">
+    <meta name="theme-color" content="#18B8D6">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg:#F4FAFD; --bg-2:#FFFFFF; --bg-3:#E4F2F8; --bg-card:#FFFFFF;
+        --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40);
+        --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-glow:rgba(11,155,188,0.18);
+        --blue-bright:#17C5E0; --blue-dark:#087A95;
+        --white:#081C2B; --white-dim:rgba(8,28,43,0.72);
+        --text-muted:#4A789A; --text-sub:#1A506A;
+        --danger:#ff4f5e; --warning:#b45309; --success:#15803d;
+        --radius:10px; --radius-lg:16px; --radius-xl:24px;
+        --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace;
+        --nav-h:64px;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+      body {
+        background: var(--bg); color: var(--white);
+        font-family: var(--font-body); min-height: 100vh;
+        -webkit-font-smoothing: antialiased; overflow-x: hidden;
+      }
+      body::before {
+        content: ''; position: fixed; inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+        opacity: .06; pointer-events: none; z-index: 0;
+      }
 
-    /* PAGE */
-    .page { padding-top: calc(var(--nav-h) + 2rem); padding-bottom: 4rem; position: relative; z-index: 2; }
-    .inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+      /* PAGE */
+      .page { padding-top: calc(var(--nav-h) + 2rem); padding-bottom: 4rem; position: relative; z-index: 2; }
+      .inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
 
-    /* PAGE HEADER */
-    .page-header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
-    .page-header-tag { font-size: 10px; font-family: var(--font-mono); color: var(--blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: 700; }
-    .page-header-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 800; letter-spacing: -0.8px; line-height: 1.1; color: var(--white); }
-    .page-header-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; }
+      /* PAGE HEADER */
+      .page-header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
+      .page-header-tag { font-size: 10px; font-family: var(--font-mono); color: var(--blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: 700; }
+      .page-header-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 800; letter-spacing: -0.8px; line-height: 1.1; color: var(--white); }
+      .page-header-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; }
 
-    /* BUTTON */
-    .btn-sm {
-      display: inline-flex; align-items: center; gap: 7px;
-      background: var(--blue); color: #fff;
-      font-family: var(--font-body); font-weight: 700; font-size: 13px;
-      padding: 10px 18px; border-radius: var(--radius);
-      text-decoration: none; border: none; cursor: pointer;
-      transition: all .2s; box-shadow: 0 4px 14px rgba(11,155,188,.25);
-      white-space: nowrap; -webkit-tap-highlight-color: transparent;
-    }
-    .btn-sm:hover { background: var(--blue-bright); }
-    .btn-sm:active { transform: scale(0.97); }
+      /* BUTTON */
+      .btn-sm {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: var(--blue); color: #fff;
+        font-family: var(--font-body); font-weight: 700; font-size: 13px;
+        padding: 10px 18px; border-radius: var(--radius);
+        text-decoration: none; border: none; cursor: pointer;
+        transition: all .2s; box-shadow: 0 4px 14px rgba(11,155,188,.25);
+        white-space: nowrap; -webkit-tap-highlight-color: transparent;
+      }
+      .btn-sm:hover { background: var(--blue-bright); }
+      .btn-sm:active { transform: scale(0.97); }
 
-    /* DUMMY BANNER */
-    .dummy-banner {
-      background: rgba(180,83,9,0.07); border: 1px solid rgba(180,83,9,0.22);
-      border-radius: var(--radius-lg); padding: .9rem 1.25rem;
-      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;
-      font-size: 12px; color: #b45309; font-family: var(--font-mono); font-weight: 700;
-      flex-wrap: wrap;
-    }
-    .dummy-banner a { color: var(--blue); margin-left: 6px; font-weight: 700; text-decoration: none; }
+      /* DUMMY BANNER */
+      .dummy-banner {
+        background: rgba(180,83,9,0.07); border: 1px solid rgba(180,83,9,0.22);
+        border-radius: var(--radius-lg); padding: .9rem 1.25rem;
+        margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;
+        font-size: 12px; color: #b45309; font-family: var(--font-mono); font-weight: 700;
+        flex-wrap: wrap;
+      }
+      .dummy-banner a { color: var(--blue); margin-left: 6px; font-weight: 700; text-decoration: none; }
 
-    /* STATS ROW */
-    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .875rem; margin-bottom: 1.5rem; }
-    .stat-box {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 1.25rem;
-      position: relative; overflow: hidden;
-      transition: all .3s; cursor: default;
-      box-shadow: 0 2px 8px rgba(11,155,188,0.05);
-    }
-    .stat-box:hover { border-color: var(--border-accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(11,155,188,0.10); }
-    .stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), transparent); }
-    .stat-box__icon {
-      width: 36px; height: 36px; background: var(--blue-dim);
-      border: 1px solid var(--border-accent); border-radius: 9px;
-      display: grid; place-items: center; font-size: 15px; color: var(--blue);
-      margin-bottom: 10px;
-    }
-    .stat-box__label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 600; }
-    .stat-box__value { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; font-family: var(--font-mono); color: var(--white); letter-spacing: -1px; line-height: 1; }
-    .stat-box__trend { font-size: 11px; margin-top: 4px; color: var(--blue); font-family: var(--font-mono); font-weight: 600; }
-    .stat-box__trend.warn { color: var(--warning); }
+      /* STATS ROW */
+      .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .875rem; margin-bottom: 1.5rem; }
+      .stat-box {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: var(--radius-lg); padding: 1.25rem;
+        position: relative; overflow: hidden;
+        transition: all .3s; cursor: default;
+        box-shadow: 0 2px 8px rgba(11,155,188,0.05);
+      }
+      .stat-box:hover { border-color: var(--border-accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(11,155,188,0.10); }
+      .stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), transparent); }
+      .stat-box__icon {
+        width: 36px; height: 36px; background: var(--blue-dim);
+        border: 1px solid var(--border-accent); border-radius: 9px;
+        display: grid; place-items: center; font-size: 15px; color: var(--blue);
+        margin-bottom: 10px;
+      }
+      .stat-box__label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 600; }
+      .stat-box__value { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; font-family: var(--font-mono); color: var(--white); letter-spacing: -1px; line-height: 1; }
+      .stat-box__trend { font-size: 11px; margin-top: 4px; color: var(--blue); font-family: var(--font-mono); font-weight: 600; }
+      .stat-box__trend.warn { color: var(--warning); }
 
-    /* MAIN GRID */
-    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; }
+      /* MAIN GRID */
+      .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; }
 
-    /* CARD */
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 2px 8px rgba(11,155,188,0.04); }
-    .card__header { padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(11,155,188,0.02); }
-    .card__title { font-size: 13px; font-weight: 700; color: var(--white); }
-    .card__action { font-size: 11px; color: var(--blue); text-decoration: none; font-family: var(--font-mono); font-weight: 600; transition: color .2s; white-space: nowrap; }
-    .card__action:hover { color: var(--blue-dark); }
-    .card__body { padding: 1.1rem 1.35rem; }
+      /* CARD */
+      .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 2px 8px rgba(11,155,188,0.04); }
+      .card__header { padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(11,155,188,0.02); }
+      .card__title { font-size: 13px; font-weight: 700; color: var(--white); }
+      .card__action { font-size: 11px; color: var(--blue); text-decoration: none; font-family: var(--font-mono); font-weight: 600; transition: color .2s; white-space: nowrap; }
+      .card__action:hover { color: var(--blue-dark); }
+      .card__body { padding: 1.1rem 1.35rem; }
 
-    /* SESSION LIST */
-    .session-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-    .session-item {
-      display: flex; align-items: center; gap: 11px;
-      padding: 11px 13px; background: var(--bg);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      transition: all .25s; cursor: default;
-    }
-    .session-item:hover { border-color: var(--border-accent); transform: translateX(3px); background: #fff; }
-    .session-item__icon {
-      width: 38px; height: 38px; background: var(--blue-dim);
-      border-radius: 9px; display: grid; place-items: center;
-      color: var(--blue); flex-shrink: 0; font-size: 14px;
-      border: 1px solid var(--border-accent);
-    }
-    .session-item__name { font-size: 13px; font-weight: 700; color: var(--white); }
-    .session-item__meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px; }
-    .session-item__right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-    .session-score { font-size: 14px; font-family: var(--font-mono); color: var(--blue); font-weight: 800; }
+      /* SESSION LIST */
+      .session-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+      .session-item {
+        display: flex; align-items: center; gap: 11px;
+        padding: 11px 13px; background: var(--bg);
+        border: 1px solid var(--border); border-radius: var(--radius);
+        transition: all .25s; cursor: default;
+      }
+      .session-item:hover { border-color: var(--border-accent); transform: translateX(3px); background: #fff; }
+      .session-item__icon {
+        width: 38px; height: 38px; background: var(--blue-dim);
+        border-radius: 9px; display: grid; place-items: center;
+        color: var(--blue); flex-shrink: 0; font-size: 14px;
+        border: 1px solid var(--border-accent);
+      }
+      .session-item__name { font-size: 13px; font-weight: 700; color: var(--white); }
+      .session-item__meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px; }
+      .session-item__right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+      .session-score { font-size: 14px; font-family: var(--font-mono); color: var(--blue); font-weight: 800; }
 
-    /* BADGE */
-    .badge { display: inline-flex; align-items: center; font-size: 9px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
-    .badge--success { background: rgba(21,128,61,.10); color: #15803d; border: 1px solid rgba(21,128,61,.25); }
-    .badge--warning { background: rgba(180,83,9,.10); color: #b45309; border: 1px solid rgba(180,83,9,.25); }
-    .badge--muted { background: rgba(11,155,188,.08); color: var(--text-muted); border: 1px solid var(--border); }
-    .badge--blue { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--border-accent); }
+      /* BADGE */
+      .badge { display: inline-flex; align-items: center; font-size: 9px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+      .badge--success { background: rgba(21,128,61,.10); color: #15803d; border: 1px solid rgba(21,128,61,.25); }
+      .badge--warning { background: rgba(180,83,9,.10); color: #b45309; border: 1px solid rgba(180,83,9,.25); }
+      .badge--muted { background: rgba(11,155,188,.08); color: var(--text-muted); border: 1px solid var(--border); }
+      .badge--blue { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--border-accent); }
 
-    /* WEEK BARS */
-    .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 72px; margin: .875rem 0; }
-    .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .week-bar {
-      width: 100%; border-radius: 4px 4px 0 0;
-      background: var(--blue-dim); border: 1px solid var(--border-accent);
-      transition: height .3s; min-height: 4px;
-      position: relative; overflow: hidden;
-    }
-    .week-bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, var(--blue), var(--blue-dark)); opacity: .85; }
-    .week-bar-label { font-size: 8px; font-family: var(--font-mono); color: var(--text-muted); text-align: center; font-weight: 600; }
+      /* WEEK BARS */
+      .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 72px; margin: .875rem 0; }
+      .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .week-bar {
+        width: 100%; border-radius: 4px 4px 0 0;
+        background: var(--blue-dim); border: 1px solid var(--border-accent);
+        transition: height .3s; min-height: 4px;
+        position: relative; overflow: hidden;
+      }
+      .week-bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, var(--blue), var(--blue-dark)); opacity: .85; }
+      .week-bar-label { font-size: 8px; font-family: var(--font-mono); color: var(--text-muted); text-align: center; font-weight: 600; }
 
-    /* ACCURACY RING */
-    .accuracy-ring-wrap { display: flex; align-items: center; justify-content: center; gap: 1.25rem; padding: .875rem 0; }
-    .ring-svg { transform: rotate(-90deg); }
-    .ring-track { fill: none; stroke: var(--bg-3); stroke-width: 8; }
-    .ring-fill { fill: none; stroke: var(--blue); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251; stroke-dashoffset: 251; animation: ringAnim 1.8s ease forwards .3s; filter: drop-shadow(0 0 5px var(--blue-glow)); }
-    @keyframes ringAnim { to { stroke-dashoffset: 51; } }
-    .ring-info-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); letter-spacing: -1.5px; }
-    .ring-info-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+      /* ACCURACY RING */
+      .accuracy-ring-wrap { display: flex; align-items: center; justify-content: center; gap: 1.25rem; padding: .875rem 0; }
+      .ring-svg { transform: rotate(-90deg); }
+      .ring-track { fill: none; stroke: var(--bg-3); stroke-width: 8; }
+      .ring-fill { fill: none; stroke: var(--blue); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251; stroke-dashoffset: 251; animation: ringAnim 1.8s ease forwards .3s; filter: drop-shadow(0 0 5px var(--blue-glow)); }
+      @keyframes ringAnim { to { stroke-dashoffset: 51; } }
+      .ring-info-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue); letter-spacing: -1.5px; }
+      .ring-info-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
-    /* PLAN CARD */
-    .plan-card {
-      background: linear-gradient(135deg, rgba(11,155,188,0.08), var(--bg-card));
-      border: 2px solid var(--border-accent); border-radius: var(--radius-lg);
-      padding: 1.35rem; position: relative; overflow: hidden;
-      box-shadow: 0 4px 16px rgba(11,155,188,0.08);
-    }
-    .plan-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), transparent); }
-    .plan-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; color: var(--white); }
-    .plan-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 1.1rem; font-weight: 500; }
-    .plan-progress-wrap { background: var(--bg-3); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 5px; }
-    .plan-progress-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); animation: growBar 1.5s ease forwards; }
-    @keyframes growBar { from { width: 0; } }
-    .plan-progress-foot { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
+      /* PLAN CARD */
+      .plan-card {
+        background: linear-gradient(135deg, rgba(11,155,188,0.08), var(--bg-card));
+        border: 2px solid var(--border-accent); border-radius: var(--radius-lg);
+        padding: 1.35rem; position: relative; overflow: hidden;
+        box-shadow: 0 4px 16px rgba(11,155,188,0.08);
+      }
+      .plan-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), transparent); }
+      .plan-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; color: var(--white); }
+      .plan-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 1.1rem; font-weight: 500; }
+      .plan-progress-wrap { background: var(--bg-3); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 5px; }
+      .plan-progress-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); animation: growBar 1.5s ease forwards; }
+      @keyframes growBar { from { width: 0; } }
+      .plan-progress-foot { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
 
-    /* QUICK ACTIONS */
-    .quick-actions { display: flex; flex-direction: column; gap: 7px; margin-top: .75rem; }
-    .btn-full {
-      width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 12px; border-radius: var(--radius);
-      font-family: var(--font-body); font-size: 13px; font-weight: 700;
-      text-decoration: none; border: none; cursor: pointer; transition: all .2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-full-primary { background: var(--blue); color: #fff; box-shadow: 0 4px 14px rgba(11,155,188,.22); }
-    .btn-full-primary:hover { background: var(--blue-bright); }
-    .btn-full-primary:active { transform: scale(0.98); }
-    .btn-full-ghost { background: transparent; color: var(--text-sub); border: 2px solid var(--border); }
-    .btn-full-ghost:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
-    .btn-full-ghost:active { transform: scale(0.98); }
+      /* QUICK ACTIONS */
+      .quick-actions { display: flex; flex-direction: column; gap: 7px; margin-top: .75rem; }
+      .btn-full {
+        width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 12px; border-radius: var(--radius);
+        font-family: var(--font-body); font-size: 13px; font-weight: 700;
+        text-decoration: none; border: none; cursor: pointer; transition: all .2s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .btn-full-primary { background: var(--blue); color: #fff; box-shadow: 0 4px 14px rgba(11,155,188,.22); }
+      .btn-full-primary:hover { background: var(--blue-bright); }
+      .btn-full-primary:active { transform: scale(0.98); }
+      .btn-full-ghost { background: transparent; color: var(--text-sub); border: 2px solid var(--border); }
+      .btn-full-ghost:hover { border-color: var(--border-accent); color: var(--blue); background: var(--blue-dim); }
+      .btn-full-ghost:active { transform: scale(0.98); }
 
-    /* UPCOMING */
-    .upcoming-item { display: flex; gap: 11px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-    .upcoming-item:last-child { border-bottom: none; }
-    .upcoming-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 6px var(--blue-glow); }
-    .upcoming-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--white); }
-    .upcoming-time { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); font-weight: 500; }
+      /* UPCOMING */
+      .upcoming-item { display: flex; gap: 11px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+      .upcoming-item:last-child { border-bottom: none; }
+      .upcoming-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 6px var(--blue-glow); }
+      .upcoming-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--white); }
+      .upcoming-time { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); font-weight: 500; }
 
-    /* EMPTY STATE */
-    .empty-state { text-align: center; padding: 2.5rem 1.5rem; color: var(--text-muted); }
-    .empty-icon { font-size: 2.5rem; opacity: .25; margin-bottom: .875rem; }
-    .empty-title { font-size: 14px; font-weight: 700; color: var(--text-sub); margin-bottom: .4rem; }
+      /* EMPTY STATE */
+      .empty-state { text-align: center; padding: 2.5rem 1.5rem; color: var(--text-muted); }
+      .empty-icon { font-size: 2.5rem; opacity: .25; margin-bottom: .875rem; }
+      .empty-title { font-size: 14px; font-weight: 700; color: var(--text-sub); margin-bottom: .4rem; }
 
-    /* FLASH */
-    .flash-wrap { position: fixed; top: calc(var(--nav-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 300; min-width: 280px; max-width: 480px; display: flex; flex-direction: column; gap: 7px; width: 90%; }
-    .flash { padding: 11px 15px; border-radius: var(--radius); font-size: 13px; border: 1px solid transparent; animation: slideDown .25s ease; }
-    .flash--success { background: rgba(11,155,188,.10); border-color: rgba(11,155,188,.3); color: var(--blue); }
-    .flash--danger { background: rgba(255,79,94,.10); border-color: rgba(255,79,94,.3); color: #d9001e; }
-    .flash--info { background: rgba(26,86,106,.10); border-color: rgba(26,86,106,.3); color: var(--text-sub); }
-    .flash--warning { background: rgba(180,83,9,.10); border-color: rgba(180,83,9,.3); color: #b45309; }
-    @keyframes slideDown { from{ opacity:0; transform:translateY(-10px); } to{ opacity:1; transform:translateY(0); } }
+      /* FLASH */
+      .flash-wrap { position: fixed; top: calc(var(--nav-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 300; min-width: 280px; max-width: 480px; display: flex; flex-direction: column; gap: 7px; width: 90%; }
+      .flash { padding: 11px 15px; border-radius: var(--radius); font-size: 13px; border: 1px solid transparent; animation: slideDown .25s ease; }
+      .flash--success { background: rgba(11,155,188,.10); border-color: rgba(11,155,188,.3); color: var(--blue); }
+      .flash--danger { background: rgba(255,79,94,.10); border-color: rgba(255,79,94,.3); color: #d9001e; }
+      .flash--info { background: rgba(26,86,106,.10); border-color: rgba(26,86,106,.3); color: var(--text-sub); }
+      .flash--warning { background: rgba(180,83,9,.10); border-color: rgba(180,83,9,.3); color: #b45309; }
+      @keyframes slideDown { from{ opacity:0; transform:translateY(-10px); } to{ opacity:1; transform:translateY(0); } }
 
-    /* PROGRESS BARS (weekly chart non-dummy) */
-    .prog-row { display: flex; align-items: center; gap: 10px; }
-    .prog-date { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); width: 54px; flex-shrink: 0; font-weight: 600; }
-    .prog-track { flex: 1; height: 7px; background: var(--bg-3); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
-    .prog-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); border-radius: 3px; }
-    .prog-pct { font-size: 11px; font-family: var(--font-mono); color: var(--blue); width: 32px; text-align: right; font-weight: 700; }
+      /* PROGRESS BARS (weekly chart non-dummy) */
+      .prog-row { display: flex; align-items: center; gap: 10px; }
+      .prog-date { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); width: 54px; flex-shrink: 0; font-weight: 600; }
+      .prog-track { flex: 1; height: 7px; background: var(--bg-3); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+      .prog-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--blue-bright)); border-radius: 3px; }
+      .prog-pct { font-size: 11px; font-family: var(--font-mono); color: var(--blue); width: 32px; text-align: right; font-weight: 700; }
 
-    /* RESPONSIVE */
-    @media (max-width: 960px) {
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .main-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 600px) {
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .stat-box { padding: 1rem; }
-      .stat-box__value { font-size: 1.5rem; }
-      .page-header { flex-direction: column; align-items: flex-start; }
-    }
-    @media (max-width: 380px) {
-      .stats-row { grid-template-columns: 1fr 1fr; gap: .6rem; }
-      .inner { padding: 0 1rem; }
-    }
-  </style>
-</head>
-<body>
-  {% set active_page = 'dashboard' %}
-  {% include 'partials/nav.html' %}
+      /* RESPONSIVE */
+      @media (max-width: 960px) {
+        .stats-row { grid-template-columns: 1fr 1fr; }
+        .main-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 600px) {
+        .stats-row { grid-template-columns: 1fr 1fr; }
+        .stat-box { padding: 1rem; }
+        .stat-box__value { font-size: 1.5rem; }
+        .page-header { flex-direction: column; align-items: flex-start; }
+      }
+      @media (max-width: 380px) {
+        .stats-row { grid-template-columns: 1fr 1fr; gap: .6rem; }
+        .inner { padding: 0 1rem; }
+      }
+    </style>
+  </head>
+  <body>
+    {% set active_page = 'dashboard' %}
+    {% include 'partials/nav.html' %}
 
-  <div class="flash-wrap">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}{% for category, message in messages %}
-        <div class="flash flash--{{ category }}">{{ message }}</div>
-      {% endfor %}{% endif %}
-    {% endwith %}
-  </div>
+    <div class="flash-wrap">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="flash flash--{{ category }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+    </div>
 
-  <div class="page">
-    <div class="inner">
+    <div class="page">
+      <div class="inner">
 
+        {% if dummy_mode %}
+        <div class="dummy-banner">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <strong>Dummy Data Mode</strong> — Data di bawah adalah contoh.
+          <a href="{{ url_for('auth.register') }}">Daftar sekarang</a> untuk data nyata.
+        </div>
+        {% endif %}
+
+        <div class="page-header">
+          <div>
+            <div class="page-header-tag">Recovery Overview</div>
+            <h1 class="page-header-title">Halo, {{ user_name }}</h1>
+            <div class="page-header-sub">
+              Progres rehabilitasi Anda{% if dummy_mode %} (contoh data){% endif %}.
+            </div>
+          </div>
+          <a href="{{ url_for('games.hub') }}" class="btn-sm">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Pilih Program Terapi
+          </a>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-box__icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l2 2L11 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="stat-box__label">Sesi Motorik</div>
+            <div class="stat-box__value">{{ total_sessions }}</div>
+            <div class="stat-box__trend">{% if dummy_mode %}+3 minggu ini{% else %}completed{% endif %}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box__icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="stat-box__label">Akurasi Motorik</div>
+            <div class="stat-box__value">{{ avg_accuracy }}%</div>
+            <div class="stat-box__trend">skor postur</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box__icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 12V8M8 12V4M12 12V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stat-box__label">Akurasi Bicara</div>
+            <div class="stat-box__value">{{ speech_accuracy }}%</div>
+            <div class="stat-box__trend">terapi wicara</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box__icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v4l3 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </div>
+            <div class="stat-box__label">Day Streak</div>
+            <div class="stat-box__value">{{ streak }}</div>
+            <div class="stat-box__trend {% if dummy_mode %}warn{% endif %}">{% if dummy_mode %}personal best{% else %}days in a row{% endif %}</div>
+          </div>
+        </div>
+
+        <div class="main-grid">
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+            <div class="card">
+              <div class="card__header">
+                <div class="card__title">High Score Kognitif (Memori)</div>
+                <a href="{{ url_for('games.memory') }}" class="card__action">Mainkan Game &rarr;</a>
+              </div>
+              <div class="card__body">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;">
+                  <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);">
+                    <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">EASY</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--blue);font-family:var(--font-mono);">{{ memory_scores.easy if memory_scores else 0 }}</div>
+                  </div>
+                  <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);">
+                    <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">MEDIUM</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--warning);font-family:var(--font-mono);">{{ memory_scores.medium if memory_scores else 0 }}</div>
+                  </div>
+                  <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);">
+                    <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">HARD</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--danger);font-family:var(--font-mono);">{{ memory_scores.hard if memory_scores else 0 }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card__header">
+                <div class="card__title">Sesi Terkini</div>
+                <a href="{{ url_for('sessions.history') }}" class="card__action">Lihat semua &rarr;</a>
+              </div>
+              <div class="card__body">
+                {% if dummy_mode %}
+                <ul class="session-list">
+                  {% for item in [
+                    ('&#9675;','Knee Extension','17 Mar 2026','10 reps &middot; 3 sets &middot; 120s','92%','completed'),
+                    ('&#9651;','Shoulder Rotation','16 Mar 2026','15 reps &middot; 2 sets &middot; 90s','84%','completed'),
+                    ('&#9670;','Hip Abduction','15 Mar 2026','8 reps &middot; 2 sets &middot; 75s','78%','in_progress'),
+                    ('&#9711;','Ankle Circles','14 Mar 2026','20 reps &middot; 3 sets &middot; 60s','95%','completed'),
+                    ('&#9632;','Wrist Flexion','13 Mar 2026','12 reps &middot; 3 sets &middot; 80s','88%','completed'),
+                  ] %}
+                  <li class="session-item">
+                    <div class="session-item__icon">{{ item[0] }}</div>
+                    <div style="min-width:0;">
+                      <div class="session-item__name">{{ item[1] }}</div>
+                      <div class="session-item__meta">{{ item[2] }} &middot; {{ item[3] }}</div>
+                    </div>
+                    <div class="session-item__right">
+                      <span class="session-score">{{ item[4] }}</span>
+                      <span class="badge badge--{% if item[5]=='completed' %}success{% elif item[5]=='in_progress' %}warning{% else %}muted{% endif %}">
+                        {{ 'Selesai' if item[5]=='completed' else 'Berlangsung' if item[5]=='in_progress' else item[5] }}
+                      </span>
+                    </div>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% elif recent_sessions %}
+                <ul class="session-list">
+                  {% for s in recent_sessions %}
+                  <li class="session-item">
+                    <div class="session-item__icon">&#9675;</div>
+                    <div style="min-width:0;">
+                      <div class="session-item__name">{{ s.exercise.name if s.exercise else 'Exercise' }}</div>
+                      <div class="session-item__meta">{{ s.started_at.strftime('%d %b %Y') }} &middot; {{ s.reps_completed }} reps &middot; {{ s.sets_completed }} sets</div>
+                    </div>
+                    <div class="session-item__right">
+                      <span class="session-score">{{ s.accuracy_score|round(1) }}%</span>
+                      <span class="badge badge--{% if s.status=='completed' %}success{% elif s.status=='in_progress' %}warning{% else %}muted{% endif %}">{{ s.status }}</span>
+                    </div>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <div class="empty-state">
+                  <div class="empty-icon">&#9675;</div>
+                  <div class="empty-title">Belum ada sesi</div>
+                  <div style="font-size:12px;color:var(--text-muted);">Mulai latihan pertama untuk melihat progress di sini.</div>
+                  <a href="{{ url_for('exercises.index') }}" style="display:inline-flex;margin-top:.875rem;background:var(--blue);color:#fff;padding:9px 18px;border-radius:var(--radius);font-size:12px;font-weight:700;text-decoration:none;">Browse Exercises</a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card__header">
+                <div class="card__title">Akurasi 7 Hari Terakhir</div>
+                <span class="badge badge--blue">Weekly</span>
+              </div>
+              <div class="card__body">
+                {% if dummy_mode %}
+                <div class="week-bars" id="weekBars"></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;font-weight:600;" id="weekLabels"></div>
+                {% elif progress_records %}
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                  {% for p in progress_records[:7] %}
+                  <div class="prog-row">
+                    <span class="prog-date">{{ p.date.strftime('%d %b') }}</span>
+                    <div class="prog-track"><div class="prog-fill" style="width:{{ [p.avg_accuracy,100]|min }}%;"></div></div>
+                    <span class="prog-pct">{{ p.avg_accuracy|round(0)|int }}%</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1.5rem 0;">Progress data akan muncul setelah sesi pertama Anda.</div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div><div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+            <div class="card">
+              <div class="card__header">
+                <div class="card__title">Akurasi Terapi Wicara</div>
+                <a href="{{ url_for('games.speech') }}" class="card__action">Latihan &rarr;</a>
+              </div>
+              <div class="card__body" style="display:flex;align-items:center;gap:1rem;">
+                <div style="width:48px;height:48px;background:var(--blue-dim);border-radius:12px;display:grid;place-items:center;font-size:20px;">🎤</div>
+                <div>
+                  <div style="font-size:1.8rem;font-weight:800;font-family:var(--font-mono);color:var(--blue);line-height:1;">{{ speech_accuracy if speech_accuracy else 0 }}%</div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Rata-rata pelafalan benar</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card__header">
+                <div class="card__title">Akurasi Postur</div>
+                <span class="badge badge--blue">Minggu ini</span>
+              </div>
+              <div class="card__body">
+                <div class="accuracy-ring-wrap">
+                  <svg class="ring-svg" width="88" height="88" viewBox="0 0 90 90">
+                    <circle class="ring-track" cx="45" cy="45" r="40"/>
+                    <circle class="ring-fill" cx="45" cy="45" r="40"/>
+                  </svg>
+                  <div>
+                    <div class="ring-info-val">{{ avg_accuracy }}%</div>
+                    <div class="ring-info-label">{% if dummy_mode %}di atas target{% else %}avg score{% endif %}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% if dummy_mode %}
+            <div class="plan-card">
+              <div class="plan-title">Program Pemulihan</div>
+              <div class="plan-sub">Ortopedik — Lutut Pasca Operasi</div>
+              <div class="plan-progress-wrap"><div class="plan-progress-bar" style="width:65%"></div></div>
+              <div class="plan-progress-foot"><span>Minggu 4 dari 8</span><span style="color:var(--blue);font-weight:700;">65%</span></div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+              <div class="card__header"><div class="card__title">Quick Start</div></div>
+              <div class="card__body">
+                <div class="quick-actions">
+                  <a href="{{ url_for('games.hub') }}" class="btn-full btn-full-primary">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><polygon points="4,2 14,8 4,14" fill="currentColor"/></svg>
+                    Pilih Program Terapi
+                  </a>
+                  <a href="{{ url_for('sessions.history') }}" class="btn-full btn-full-ghost">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="7.5" width="9" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="11" width="11" height="1.5" rx="1" fill="currentColor"/></svg>
+                    Lihat History
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {% if dummy_mode %}
+            <div class="card">
+              <div class="card__header"><div class="card__title">Jadwal Besok</div></div>
+              <div class="card__body" style="padding-bottom:.75rem;">
+                <div class="upcoming-item">
+                  <div class="upcoming-dot"></div>
+                  <div><div class="upcoming-name">Knee Extension</div><div class="upcoming-time">08:00 &middot; 3 sets &middot; 10 reps</div></div>
+                </div>
+                <div class="upcoming-item">
+                  <div class="upcoming-dot" style="background:#b45309;box-shadow:0 0 6px rgba(180,83,9,0.4);"></div>
+                  <div><div class="upcoming-name">Hip Abduction</div><div class="upcoming-time">10:00 &middot; 3 sets &middot; 12 reps</div></div>
+                </div>
+                <div class="upcoming-item">
+                  <div class="upcoming-dot"></div>
+                  <div><div class="upcoming-name">Ankle Circles</div><div class="upcoming-time">14:00 &middot; 2 sets &middot; 20 reps</div></div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+          </div></div></div></div><script>
       {% if dummy_mode %}
-      <div class="dummy-banner">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <strong>Dummy Data Mode</strong> — Data di bawah adalah contoh.
-        <a href="{{ url_for('auth.register') }}">Daftar sekarang</a> untuk data nyata.
-      </div>
+      const days = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+      const vals = [75,82,88,70,90,85,87];
+      const barsEl = document.getElementById('weekBars');
+      const labelsEl = document.getElementById('weekLabels');
+      if (barsEl) {
+        vals.forEach((v, i) => {
+          const wrap = document.createElement('div'); wrap.className = 'week-bar-wrap';
+          const bar = document.createElement('div'); bar.className = 'week-bar';
+          bar.style.height = '0px'; bar.title = v + '%';
+          wrap.appendChild(bar); barsEl.appendChild(wrap);
+          setTimeout(() => {
+            bar.style.height = (v * 0.72) + 'px';
+            bar.style.transition = 'height 0.8s ease ' + (i * 0.1) + 's';
+          }, 100);
+        });
+        days.forEach(d => {
+          const el = document.createElement('span');
+          el.textContent = d;
+          el.style.cssText = 'flex:1;text-align:center;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);font-weight:600;';
+          labelsEl.appendChild(el);
+        });
+      }
       {% endif %}
 
-      <div class="page-header">
-        <div>
-          <div class="page-header-tag">Recovery Overview</div>
-          <h1 class="page-header-title">Halo, {{ user_name }}</h1>
-          <div class="page-header-sub">
-            Progres rehabilitasi Anda{% if dummy_mode %} (contoh data){% endif %}.
-          </div>
-        </div>
-        <a href="{{ url_for('exercises.index') }}" class="btn-sm">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Mulai Sesi
-        </a>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-row">
-        <div class="stat-box">
-          <div class="stat-box__icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l2 2L11 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="stat-box__label">Total Sesi</div>
-          <div class="stat-box__value">{{ total_sessions }}</div>
-          <div class="stat-box__trend">{% if dummy_mode %}+3 minggu ini{% else %}completed{% endif %}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box__icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="stat-box__label">Avg Akurasi</div>
-          <div class="stat-box__value">{{ avg_accuracy }}%</div>
-          <div class="stat-box__trend">skor postur</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box__icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v4l3 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/></svg>
-          </div>
-          <div class="stat-box__label">Day Streak</div>
-          <div class="stat-box__value">{{ streak }}</div>
-          <div class="stat-box__trend {% if dummy_mode %}warn{% endif %}">{% if dummy_mode %}personal best{% else %}days in a row{% endif %}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box__icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 12V8M8 12V4M12 12V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          </div>
-          <div class="stat-box__label">{% if dummy_mode %}Total Reps{% else %}Plan{% endif %}</div>
-          <div class="stat-box__value">{% if dummy_mode %}480{% else %}<span class="badge badge--blue" style="font-size:0.85rem;">Free</span>{% endif %}</div>
-          <div class="stat-box__trend">{% if dummy_mode %}sejak bergabung{% else %}<a href="#" style="color:var(--blue);font-size:11px;font-weight:700;">Upgrade</a>{% endif %}</div>
-        </div>
-      </div>
-
-      <!-- Main grid -->
-      <div class="main-grid">
-        <div style="display:flex;flex-direction:column;gap:1.25rem;">
-
-          <!-- Recent sessions -->
-          <div class="card">
-            <div class="card__header">
-              <div class="card__title">Sesi Terkini</div>
-              <a href="{{ url_for('sessions.history') }}" class="card__action">Lihat semua &rarr;</a>
-            </div>
-            <div class="card__body">
-              {% if dummy_mode %}
-              <ul class="session-list">
-                {% for item in [
-                  ('&#9675;','Knee Extension','17 Mar 2026','10 reps &middot; 3 sets &middot; 120s','92%','completed'),
-                  ('&#9651;','Shoulder Rotation','16 Mar 2026','15 reps &middot; 2 sets &middot; 90s','84%','completed'),
-                  ('&#9670;','Hip Abduction','15 Mar 2026','8 reps &middot; 2 sets &middot; 75s','78%','in_progress'),
-                  ('&#9711;','Ankle Circles','14 Mar 2026','20 reps &middot; 3 sets &middot; 60s','95%','completed'),
-                  ('&#9632;','Wrist Flexion','13 Mar 2026','12 reps &middot; 3 sets &middot; 80s','88%','completed'),
-                ] %}
-                <li class="session-item">
-                  <div class="session-item__icon">{{ item[0] }}</div>
-                  <div style="min-width:0;">
-                    <div class="session-item__name">{{ item[1] }}</div>
-                    <div class="session-item__meta">{{ item[2] }} &middot; {{ item[3] }}</div>
-                  </div>
-                  <div class="session-item__right">
-                    <span class="session-score">{{ item[4] }}</span>
-                    <span class="badge badge--{% if item[5]=='completed' %}success{% elif item[5]=='in_progress' %}warning{% else %}muted{% endif %}">
-                      {{ 'Selesai' if item[5]=='completed' else 'Berlangsung' if item[5]=='in_progress' else item[5] }}
-                    </span>
-                  </div>
-                </li>
-                {% endfor %}
-              </ul>
-              {% elif recent_sessions %}
-              <ul class="session-list">
-                {% for s in recent_sessions %}
-                <li class="session-item">
-                  <div class="session-item__icon">&#9675;</div>
-                  <div style="min-width:0;">
-                    <div class="session-item__name">{{ s.exercise.name if s.exercise else 'Exercise' }}</div>
-                    <div class="session-item__meta">{{ s.started_at.strftime('%d %b %Y') }} &middot; {{ s.reps_completed }} reps &middot; {{ s.sets_completed }} sets</div>
-                  </div>
-                  <div class="session-item__right">
-                    <span class="session-score">{{ s.accuracy_score|round(1) }}%</span>
-                    <span class="badge badge--{% if s.status=='completed' %}success{% elif s.status=='in_progress' %}warning{% else %}muted{% endif %}">{{ s.status }}</span>
-                  </div>
-                </li>
-                {% endfor %}
-              </ul>
-              {% else %}
-              <div class="empty-state">
-                <div class="empty-icon">&#9675;</div>
-                <div class="empty-title">Belum ada sesi</div>
-                <div style="font-size:12px;color:var(--text-muted);">Mulai latihan pertama untuk melihat progress di sini.</div>
-                <a href="{{ url_for('exercises.index') }}" style="display:inline-flex;margin-top:.875rem;background:var(--blue);color:#fff;padding:9px 18px;border-radius:var(--radius);font-size:12px;font-weight:700;text-decoration:none;">Browse Exercises</a>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Weekly chart -->
-          <div class="card">
-            <div class="card__header">
-              <div class="card__title">Akurasi 7 Hari Terakhir</div>
-              <span class="badge badge--blue">Weekly</span>
-            </div>
-            <div class="card__body">
-              {% if dummy_mode %}
-              <div class="week-bars" id="weekBars"></div>
-              <div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;font-weight:600;" id="weekLabels"></div>
-              {% elif progress_records %}
-              <div style="display:flex;flex-direction:column;gap:9px;">
-                {% for p in progress_records[:7] %}
-                <div class="prog-row">
-                  <span class="prog-date">{{ p.date.strftime('%d %b') }}</span>
-                  <div class="prog-track"><div class="prog-fill" style="width:{{ [p.avg_accuracy,100]|min }}%;"></div></div>
-                  <span class="prog-pct">{{ p.avg_accuracy|round(0)|int }}%</span>
-                </div>
-                {% endfor %}
-              </div>
-              {% else %}
-              <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1.5rem 0;">Progress data akan muncul setelah sesi pertama Anda.</div>
-              {% endif %}
-            </div>
-          </div>
-
-        </div><!-- /left col -->
-
-        <!-- Right column -->
-        <div style="display:flex;flex-direction:column;gap:1.25rem;">
-
-          <!-- Accuracy ring -->
-          <div class="card">
-            <div class="card__header">
-              <div class="card__title">Akurasi Postur</div>
-              <span class="badge badge--blue">Minggu ini</span>
-            </div>
-            <div class="card__body">
-              <div class="accuracy-ring-wrap">
-                <svg class="ring-svg" width="88" height="88" viewBox="0 0 90 90">
-                  <circle class="ring-track" cx="45" cy="45" r="40"/>
-                  <circle class="ring-fill" cx="45" cy="45" r="40"/>
-                </svg>
-                <div>
-                  <div class="ring-info-val">{{ avg_accuracy }}%</div>
-                  <div class="ring-info-label">{% if dummy_mode %}di atas target{% else %}avg score{% endif %}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {% if dummy_mode %}
-          <!-- Recovery plan (dummy only) -->
-          <div class="plan-card">
-            <div class="plan-title">Program Pemulihan</div>
-            <div class="plan-sub">Ortopedik — Lutut Pasca Operasi</div>
-            <div class="plan-progress-wrap"><div class="plan-progress-bar" style="width:65%"></div></div>
-            <div class="plan-progress-foot"><span>Minggu 4 dari 8</span><span style="color:var(--blue);font-weight:700;">65%</span></div>
-          </div>
-          {% endif %}
-
-          <!-- Quick actions -->
-          <div class="card">
-            <div class="card__header"><div class="card__title">Quick Start</div></div>
-            <div class="card__body">
-              <div class="quick-actions">
-                <a href="{{ url_for('exercises.index') }}" class="btn-full btn-full-primary">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><polygon points="4,2 14,8 4,14" fill="currentColor"/></svg>
-                  Mulai Sesi Baru
-                </a>
-                <a href="{{ url_for('sessions.history') }}" class="btn-full btn-full-ghost">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="7.5" width="9" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="11" width="11" height="1.5" rx="1" fill="currentColor"/></svg>
-                  Lihat History
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {% if dummy_mode %}
-          <!-- Upcoming (dummy only) -->
-          <div class="card">
-            <div class="card__header"><div class="card__title">Jadwal Besok</div></div>
-            <div class="card__body" style="padding-bottom:.75rem;">
-              <div class="upcoming-item">
-                <div class="upcoming-dot"></div>
-                <div><div class="upcoming-name">Knee Extension</div><div class="upcoming-time">08:00 &middot; 3 sets &middot; 10 reps</div></div>
-              </div>
-              <div class="upcoming-item">
-                <div class="upcoming-dot" style="background:#b45309;box-shadow:0 0 6px rgba(180,83,9,0.4);"></div>
-                <div><div class="upcoming-name">Hip Abduction</div><div class="upcoming-time">10:00 &middot; 3 sets &middot; 12 reps</div></div>
-              </div>
-              <div class="upcoming-item">
-                <div class="upcoming-dot"></div>
-                <div><div class="upcoming-name">Ankle Circles</div><div class="upcoming-time">14:00 &middot; 2 sets &middot; 20 reps</div></div>
-              </div>
-            </div>
-          </div>
-          {% endif %}
-
-        </div><!-- /right col -->
-      </div><!-- /main-grid -->
-
-    </div><!-- /inner -->
-  </div><!-- /page -->
-
-  <script>
-    {% if dummy_mode %}
-    const days = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-    const vals = [75,82,88,70,90,85,87];
-    const barsEl = document.getElementById('weekBars');
-    const labelsEl = document.getElementById('weekLabels');
-    if (barsEl) {
-      vals.forEach((v, i) => {
-        const wrap = document.createElement('div'); wrap.className = 'week-bar-wrap';
-        const bar = document.createElement('div'); bar.className = 'week-bar';
-        bar.style.height = '0px'; bar.title = v + '%';
-        wrap.appendChild(bar); barsEl.appendChild(wrap);
+      document.querySelectorAll('.flash').forEach(el => {
         setTimeout(() => {
-          bar.style.height = (v * 0.72) + 'px';
-          bar.style.transition = 'height 0.8s ease ' + (i * 0.1) + 's';
-        }, 100);
+          el.style.opacity = '0';
+          el.style.transition = 'opacity 0.4s ease';
+          setTimeout(() => el.remove(), 400);
+        }, 4000);
       });
-      days.forEach(d => {
-        const el = document.createElement('span');
-        el.textContent = d;
-        el.style.cssText = 'flex:1;text-align:center;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);font-weight:600;';
-        labelsEl.appendChild(el);
-      });
-    }
-    {% endif %}
+    </script>
+  </body>
+  </html>
 
-    document.querySelectorAll('.flash').forEach(el => {
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transition = 'opacity 0.4s ease';
-        setTimeout(() => el.remove(), 400);
-      }, 4000);
-    });
-  </script>
-</body>
-</html>
-
-templates/exercises/detail.html:
-<!DOCTYPE html>
+  templates/exercises/detail.html:
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -2892,6 +2984,493 @@ templates/exercises/index.html:
 </body>
 </html>
 
+templates/games/hub.html:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Program Terapi , MotionMate</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root { 
+      --bg:#F4FAFD; --bg-2:#FFFFFF; --bg-3:#E4F2F8; --bg-card:#FFFFFF; 
+      --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); 
+      --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-glow:rgba(11,155,188,0.18); 
+      --blue-bright:#17C5E0; --blue-dark:#087A95; 
+      --white:#081C2B; --white-dim:rgba(8,28,43,0.72); 
+      --text-muted:#4A789A; --text-sub:#1A506A; 
+      --danger:#ff4f5e; --warning:#b45309; --success:#15803d; 
+      --radius:10px; --radius-lg:16px; --radius-xl:24px; 
+      --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; 
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{font-size:16px} body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh;-webkit-font-smoothing:antialiased}
+    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;position:relative;z-index:2} .inner{max-width:1000px;margin:0 auto;padding:0 1.5rem}
+    .page-title{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:800;letter-spacing:-1px;text-align:center;margin-bottom:1rem}
+    .page-sub{text-align:center;color:var(--text-muted);margin-bottom:3rem;font-size:15px}
+    .hub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem}
+    .hub-card{background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;text-decoration:none;color:var(--white);transition:all .3s;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(11,155,188,0.06)}
+    .hub-card:hover{transform:translateY(-5px);border-color:var(--border-accent);box-shadow:0 12px 36px rgba(11,155,188,0.15)}
+    .hub-img{height:180px;width:100%;object-fit:cover;border-bottom:1px solid var(--border)}
+    .hub-body{padding:1.5rem;flex:1;display:flex;flex-direction:column}
+    .hub-cat{font-size:10px;font-family:var(--font-mono);color:var(--blue);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px}
+    .hub-title{font-size:1.4rem;font-weight:800;margin-bottom:8px;letter-spacing:-0.5px}
+    .hub-desc{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:1.5rem;flex:1}
+    .hub-btn{background:var(--blue-dim);color:var(--blue);border:1px solid var(--border-accent);border-radius:8px;padding:10px;text-align:center;font-weight:700;font-size:13px;transition:all .2s}
+    .hub-card:hover .hub-btn{background:var(--blue);color:#fff}
+    @media (max-width:768px){.hub-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  {% set active_page = 'games' %}
+  {% include 'partials/nav.html' %}
+
+  <div class="page">
+    <div class="inner">
+      <h1 class="page-title">Pilih Program Terapi Anda</h1>
+      <p class="page-sub">Kami menyediakan terapi holistik untuk mengembalikan kemampuan fisik, kognitif, dan komunikasi Anda.</p>
+      
+      <div class="hub-grid">
+        <a href="{{ url_for('exercises.index') }}" class="hub-card">
+          <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80&fit=crop" class="hub-img" alt="Motorik">
+          <div class="hub-body">
+            <div class="hub-cat">TERAPI FISIK</div>
+            <div class="hub-title">Rehabilitasi Motorik</div>
+            <div class="hub-desc">Latih kekuatan otot dan sendi dengan panduan AI pose tracking yang mengevaluasi gerakan Anda secara live lewat kamera.</div>
+            <div class="hub-btn">Pilih Latihan Fisik &rarr;</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('games.memory') }}" class="hub-card">
+          <img src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&q=80&fit=crop" class="hub-img" alt="Memori">
+          <div class="hub-body">
+            <div class="hub-cat">KOGNITIF</div>
+            <div class="hub-title">Pelatihan Memori</div>
+            <div class="hub-desc">Tingkatkan daya ingat dan konsentrasi melalui permainan pola urutan visual. Tersedia level mudah, sedang, hingga sulit.</div>
+            <div class="hub-btn">Mainkan Game Memori &rarr;</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('games.speech') }}" class="hub-card">
+          <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800&q=80&fit=crop" class="hub-img" alt="Wicara">
+          <div class="hub-body">
+            <div class="hub-cat">KOMUNIKASI</div>
+            <div class="hub-title">Terapi Wicara</div>
+            <div class="hub-desc">Latih pelafalan dan kelancaran berbicara. Ucapkan kalimat yang muncul, dan sistem AI akan menilai keakuratannya.</div>
+            <div class="hub-btn">Mulai Latihan Wicara &rarr;</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('main.wip') }}" class="hub-card" style="opacity:0.8">
+          <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80&fit=crop" class="hub-img" alt="ADL">
+          <div class="hub-body">
+            <div class="hub-cat">KESEHARIAN (WIP)</div>
+            <div class="hub-title">Aktivitas Sehari-hari</div>
+            <div class="hub-desc">Panduan interaktif untuk membantu pasien kembali mandiri dalam melakukan rutinitas harian (Activities of Daily Living).</div>
+            <div class="hub-btn" style="background:#f59e0b;color:#fff;border:none;">Segera Hadir</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+templates/games/memory.html:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Pelatihan Memori , MotionMate</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#F4FAFD; --bg-card:#FFFFFF; --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-bright:#17C5E0; --white:#081C2B; --text-muted:#4A789A; --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{font-size:16px} body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh}
+    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;display:flex;justify-content:center}
+    .game-container{background:var(--bg-card);border:2px solid var(--border-accent);border-radius:24px;padding:2rem;max-width:500px;width:100%;box-shadow:0 12px 40px rgba(11,155,188,0.1)}
+    .header{text-align:center;margin-bottom:1.5rem}
+    .title{font-size:2rem;font-weight:800;color:var(--blue);margin-bottom:5px}
+    .info-bar{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:14px;color:var(--text-muted);font-weight:700;margin-bottom:1.5rem;padding:10px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+    .controls{display:flex;gap:10px;margin-bottom:1.5rem;justify-content:center}
+    select, button{padding:10px 15px;font-family:var(--font-body);font-size:14px;font-weight:700;border-radius:8px;border:1px solid var(--border-accent);outline:none}
+    button{background:var(--blue);color:#fff;cursor:pointer;border:none}
+    button:hover{background:var(--blue-bright)}
+    button:disabled{opacity:0.5;cursor:not-allowed}
+    .grid{display:grid;gap:10px;margin:0 auto;justify-content:center}
+    .box{background:#e2e8f0;border-radius:10px;cursor:pointer;transition:background 0.1s, transform 0.1s;border:2px solid transparent}
+    .box:active{transform:scale(0.95)}
+    .box.glow{background:var(--blue-bright);border-color:var(--blue);box-shadow:0 0 15px var(--blue-bright)}
+    .box.correct{background:#22c55e;border-color:#16a34a;box-shadow:0 0 15px #22c55e}
+    .box.wrong{background:#ef4444;border-color:#dc2626;box-shadow:0 0 15px #ef4444}
+    .status-msg{text-align:center;font-weight:800;font-size:1.2rem;margin-top:1.5rem;min-height:30px;color:var(--blue)}
+  </style>
+</head>
+<body>
+  {% include 'partials/nav.html' %}
+  <div class="page">
+    <div class="game-container">
+      <div class="header">
+        <div class="title">Game Memori</div>
+        <p style="font-size:13px;color:var(--text-muted)">Ikuti pola nyala lampu secara berurutan.</p>
+      </div>
+      <div class="controls">
+        <select id="diffSelect">
+          <option value="easy">Easy (3x3)</option>
+          <option value="medium">Medium (4x3)</option>
+          <option value="hard">Hard (4x4)</option>
+        </select>
+        <button id="startBtn" onclick="startGame()">Mulai Game</button>
+      </div>
+      <div class="info-bar">
+        <span>Round: <span id="roundDisp">1 / 10</span></span>
+        <span>Score: <span id="scoreDisp">0</span></span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="status-msg" id="statusMsg">Siap bermain?</div>
+    </div>
+  </div>
+
+  <script>
+    const gridEl = document.getElementById('grid');
+    const diffSelect = document.getElementById('diffSelect');
+    const startBtn = document.getElementById('startBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const scoreDisp = document.getElementById('scoreDisp');
+    const roundDisp = document.getElementById('roundDisp');
+
+    let sequence = [];
+    let userSequence = [];
+    let round = 1;
+    let score = 0;
+    let isUserTurn = false;
+    let boxes = [];
+    const MAX_ROUNDS = 10;
+
+    const diffConfigs = {
+      easy: { cols: 3, rows: 3, size: '80px' },
+      medium: { cols: 4, rows: 3, size: '70px' },
+      hard: { cols: 4, rows: 4, size: '65px' }
+    };
+
+    function buildGrid(diff) {
+      gridEl.innerHTML = '';
+      const conf = diffConfigs[diff];
+      const total = conf.cols * conf.rows;
+      gridEl.style.gridTemplateColumns = `repeat(${conf.cols}, ${conf.size})`;
+      gridEl.style.gridTemplateRows = `repeat(${conf.rows}, ${conf.size})`;
+      boxes = [];
+
+      for(let i=0; i<total; i++) {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.dataset.id = i;
+        box.onclick = () => handleBoxClick(i);
+        gridEl.appendChild(box);
+        boxes.push(box);
+      }
+    }
+
+    diffSelect.onchange = () => { if(!startBtn.disabled) buildGrid(diffSelect.value); };
+    buildGrid('easy');
+
+    async function startGame() {
+      startBtn.disabled = true;
+      diffSelect.disabled = true;
+      round = 1; score = 0; sequence = [];
+      updateDisplay();
+      await playRound();
+    }
+
+    async function playRound() {
+      userSequence = [];
+      isUserTurn = false;
+      statusMsg.textContent = 'Perhatikan Pola...';
+      statusMsg.style.color = 'var(--text-muted)';
+      updateDisplay();
+      
+      const totalBoxes = boxes.length;
+      sequence.push(Math.floor(Math.random() * totalBoxes));
+      
+      await sleep(800);
+      for(let i=0; i<sequence.length; i++) {
+        await flashBox(sequence[i], 'glow', 500);
+        await sleep(200);
+      }
+      
+      statusMsg.textContent = 'Giliran Anda!';
+      statusMsg.style.color = 'var(--blue)';
+      isUserTurn = true;
+    }
+
+    async function handleBoxClick(id) {
+      if(!isUserTurn) return;
+      userSequence.push(id);
+      const currentIndex = userSequence.length - 1;
+
+      if(userSequence[currentIndex] !== sequence[currentIndex]) {
+        isUserTurn = false;
+        await flashBox(id, 'wrong', 500);
+        endGame(false);
+        return;
+      }
+
+      await flashBox(id, 'correct', 200);
+      score += 10;
+      updateDisplay();
+
+      if(userSequence.length === sequence.length) {
+        isUserTurn = false;
+        if(round === MAX_ROUNDS) {
+          endGame(true);
+        } else {
+          statusMsg.textContent = 'Bagus!';
+          statusMsg.style.color = '#22c55e';
+          round++;
+          setTimeout(playRound, 1000);
+        }
+      }
+    }
+
+    function flashBox(id, className, ms) {
+      return new Promise(resolve => {
+        boxes[id].classList.add(className);
+        setTimeout(() => {
+          boxes[id].classList.remove(className);
+          resolve();
+        }, ms);
+      });
+    }
+
+    function updateDisplay() {
+      roundDisp.textContent = `${round} / ${MAX_ROUNDS}`;
+      scoreDisp.textContent = score;
+    }
+
+    async function endGame(win) {
+      statusMsg.textContent = win ? `Luar Biasa! Skor akhir: ${score}` : `Game Over! Skor akhir: ${score}`;
+      statusMsg.style.color = win ? '#22c55e' : '#ef4444';
+      
+      try {
+        await fetch('{{ url_for("games.save") }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            game_type: 'memory',
+            difficulty: diffSelect.value,
+            score: score,
+            max_score: (MAX_ROUNDS * (MAX_ROUNDS+1) / 2) * 10
+          })
+        });
+      } catch(e) { console.log("Save error", e); }
+
+      startBtn.disabled = false;
+      diffSelect.disabled = false;
+      startBtn.textContent = 'Main Lagi';
+    }
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+  </script>
+</body>
+</html>
+
+templates/games/speech.html:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Terapi Wicara , MotionMate</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
+  <meta name="theme-color" content="#18B8D6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#F4FAFD; --bg-card:#FFFFFF; --border:rgba(11,155,188,0.16); --border-accent:rgba(11,155,188,0.40); --blue:#0B9BBC; --blue-dim:rgba(11,155,188,0.09); --blue-bright:#17C5E0; --white:#081C2B; --text-muted:#4A789A; --font-body:'Outfit',sans-serif; --font-mono:'JetBrains Mono',monospace; --nav-h:64px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{font-size:16px} body{background:var(--bg);color:var(--white);font-family:var(--font-body);min-height:100vh}
+    .page{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:4rem;display:flex;justify-content:center}
+    .game-container{background:var(--bg-card);border:2px solid var(--border-accent);border-radius:24px;padding:2rem;max-width:600px;width:100%;box-shadow:0 12px 40px rgba(11,155,188,0.1);text-align:center}
+    .title{font-size:2rem;font-weight:800;color:var(--blue);margin-bottom:5px}
+    .controls{display:flex;gap:10px;margin:2rem 0;justify-content:center}
+    select, button{padding:10px 15px;font-family:var(--font-body);font-size:14px;font-weight:700;border-radius:8px;border:1px solid var(--border-accent);outline:none}
+    button{background:var(--blue);color:#fff;cursor:pointer;border:none}
+    button:hover{background:var(--blue-bright)}
+    button:disabled{opacity:0.5;cursor:not-allowed}
+    .mic-btn{width:80px;height:80px;border-radius:50%;font-size:30px;display:inline-flex;align-items:center;justify-content:center;margin:1rem auto;transition:all 0.3s;box-shadow:0 8px 20px rgba(11,155,188,0.2)}
+    .mic-btn.listening{background:#ef4444;box-shadow:0 0 30px #ef4444;animation:pulse 1.5s infinite}
+    @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+    .target-box{background:var(--bg);border:2px dashed var(--border);border-radius:12px;padding:1.5rem;font-size:1.4rem;font-weight:700;margin-bottom:1rem;color:var(--white)}
+    .speech-box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:1.5rem;font-size:1.2rem;min-height:80px;color:#334155;margin-bottom:1.5rem;font-style:italic}
+    .info-bar{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:14px;color:var(--text-muted);font-weight:700;padding:10px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+    .word-correct{color:#16a34a;font-weight:800} .word-wrong{color:#ef4444;text-decoration:line-through}
+  </style>
+</head>
+<body>
+  {% include 'partials/nav.html' %}
+  <div class="page">
+    <div class="game-container">
+      <div class="title">Terapi Wicara</div>
+      <p style="font-size:13px;color:var(--text-muted)">Bacakan kalimat di bawah ini dengan jelas.</p>
+      
+      <div class="controls">
+        <select id="diffSelect">
+          <option value="easy">Pendek</option>
+          <option value="medium">Sedang</option>
+          <option value="hard">Panjang</option>
+        </select>
+        <button id="startBtn" onclick="startGame()">Mulai Sesi</button>
+      </div>
+
+      <div class="info-bar">
+        <span>Kalimat: <span id="roundDisp">0 / 10</span></span>
+        <span>Akurasi: <span id="accDisp">0%</span></span>
+      </div>
+
+      <div class="target-box" id="targetText">Klik Mulai untuk membaca.</div>
+      <button class="mic-btn" id="micBtn" disabled>🎤</button>
+      <div class="speech-box" id="speechText">Hasil suara akan muncul di sini...</div>
+      <button id="nextBtn" onclick="nextRound()" style="display:none;width:100%">Lanjut Kalimat Berikutnya &rarr;</button>
+    </div>
+  </div>
+
+  <script>
+    const sentences = {
+      easy: ["Saya mau makan", "Hari ini cerah", "Budi pergi ke pasar", "Satu dua tiga", "Tolong bantu saya"],
+      medium: ["Kucing itu tidur di atas meja yang hangat", "Saya ingin minum segelas air putih", "Tolong ambilkan buku di atas lemari", "Besok pagi kita akan pergi jalan jalan", "Terima kasih atas bantuan Anda hari ini"],
+      hard: ["Pembangunan infrastruktur sangat penting untuk memajukan perekonomian bangsa kita", "Rehabilitasi medis membutuhkan kesabaran dan konsistensi setiap harinya", "Keberhasilan tidak datang secara instan melainkan melalui proses yang panjang", "Menjaga kesehatan tubuh sama pentingnya dengan menjaga kesehatan pikiran", "Teknologi kecerdasan buatan dapat membantu mempercepat proses pemulihan pasien"]
+    };
+
+    let round = 0;
+    let totalScore = 0;
+    let currentTarget = "";
+    let recognition = null;
+    const MAX_ROUNDS = 10;
+
+    const startBtn = document.getElementById('startBtn');
+    const diffSelect = document.getElementById('diffSelect');
+    const targetText = document.getElementById('targetText');
+    const speechText = document.getElementById('speechText');
+    const micBtn = document.getElementById('micBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechReg = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechReg();
+      recognition.lang = 'id-ID';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        micBtn.classList.add('listening');
+        speechText.textContent = "Mendengarkan...";
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        processResult(transcript);
+      };
+
+      recognition.onerror = (e) => {
+        micBtn.classList.remove('listening');
+        speechText.textContent = "Error: " + e.error;
+      };
+
+      recognition.onend = () => {
+        micBtn.classList.remove('listening');
+      };
+    } else {
+      targetText.textContent = "Browser tidak mendukung fitur suara.";
+    }
+
+    micBtn.onclick = () => {
+      if(recognition) recognition.start();
+    };
+
+    function startGame() {
+      startBtn.disabled = true;
+      diffSelect.disabled = true;
+      micBtn.disabled = false;
+      round = 0; totalScore = 0;
+      document.getElementById('accDisp').textContent = "0%";
+      nextRound();
+    }
+
+    function nextRound() {
+      if (round >= MAX_ROUNDS) {
+        endGame();
+        return;
+      }
+      round++;
+      document.getElementById('roundDisp').textContent = `${round} / ${MAX_ROUNDS}`;
+      
+      const list = sentences[diffSelect.value];
+      currentTarget = list[Math.floor(Math.random() * list.length)];
+      targetText.textContent = currentTarget;
+      speechText.textContent = "Tekan tombol mic untuk bicara.";
+      speechText.innerHTML = "";
+      nextBtn.style.display = "none";
+      micBtn.style.display = "inline-flex";
+    }
+
+    function processResult(spoken) {
+      micBtn.style.display = "none";
+      const targetWords = currentTarget.toLowerCase().replace(/[.,]/g,'').split(' ');
+      const spokenWords = spoken.toLowerCase().replace(/[.,]/g,'').split(' ');
+      
+      let matchCount = 0;
+      let htmlOut = [];
+      
+      targetWords.forEach(word => {
+        if(spokenWords.includes(word)) {
+          matchCount++;
+          htmlOut.push(`<span class="word-correct">${word}</span>`);
+        } else {
+          htmlOut.push(`<span class="word-wrong">${word}</span>`);
+        }
+      });
+      
+      speechText.innerHTML = `Kamu bilang: "${spoken}"<br><br>Hasil: ` + htmlOut.join(' ');
+      
+      let acc = (matchCount / targetWords.length) * 100;
+      totalScore += acc;
+      
+      document.getElementById('accDisp').textContent = Math.round(totalScore/round) + "%";
+      nextBtn.style.display = "block";
+    }
+
+    async function endGame() {
+      targetText.textContent = "Sesi Selesai!";
+      let finalAcc = Math.round(totalScore / MAX_ROUNDS);
+      speechText.innerHTML = `Akurasi rata-rata Anda: <strong>${finalAcc}%</strong>`;
+      micBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      
+      try {
+        await fetch('{{ url_for("games.save") }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            game_type: 'speech',
+            difficulty: diffSelect.value,
+            accuracy: finalAcc
+          })
+        });
+      } catch(e) { console.log("Save error"); }
+
+      startBtn.disabled = false;
+      diffSelect.disabled = false;
+      startBtn.textContent = 'Main Lagi';
+    }
+  </script>
+</body>
+</html>
+
 templates/partials/nav.html:
 {# Shared nav snippet — include in inner pages with:
    {% set active_page = 'dashboard' %}  (or 'exercises' / 'history')
@@ -2902,8 +3481,8 @@ templates/partials/nav.html:
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     height: var(--nav-h);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 2rem;
-    background: rgba(4,9,15,0.92);
+    padding: 0 1.5rem;
+    background: rgba(244,250,253,0.96); /* TERANG SEPERTI THEME */
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
@@ -2916,7 +3495,7 @@ templates/partials/nav.html:
   .mm-nav__logo-mark {
     width: 32px; height: 32px;
     background: linear-gradient(135deg, var(--blue), var(--blue-dark));
-    color: #04090f;
+    color: #fff;
     display: grid; place-items: center;
     font-family: var(--font-mono); font-weight: 700; font-size: 14px;
     border-radius: 8px;
@@ -2926,35 +3505,37 @@ templates/partials/nav.html:
   .mm-nav__logo-text {
     font-weight: 700; font-size: 15px; letter-spacing: -0.3px;
     white-space: nowrap;
+    color: var(--white);
   }
   .mm-nav__links {
     display: flex; align-items: center; gap: 2px;
   }
   .mm-nav__link {
     color: var(--text-sub); text-decoration: none;
-    font-size: 13px; font-weight: 400;
+    font-size: 13px; font-weight: 500;
     padding: 7px 12px; border-radius: 7px;
     transition: color 0.2s, background 0.2s;
     white-space: nowrap;
   }
-  .mm-nav__link:hover { color: var(--white); background: rgba(255,255,255,0.05); }
-  .mm-nav__link--active { color: var(--blue); }
+  .mm-nav__link:hover { color: var(--blue); background: rgba(11,155,188,0.08); }
+  .mm-nav__link--active { color: var(--blue); font-weight: 700; }
   .mm-nav__dummy-badge {
     display: inline-flex; align-items: center; gap: 6px;
     background: rgba(245,158,11,0.12);
     border: 1px solid rgba(245,158,11,0.3);
-    color: #f59e0b;
+    color: #b45309;
     font-size: 10px; font-family: var(--font-mono);
     padding: 4px 10px; border-radius: 20px;
     letter-spacing: 0.5px;
     white-space: nowrap;
+    font-weight: 700;
   }
   .mm-nav__toggle {
     display: none;
     background: none;
     border: 1px solid var(--border);
     color: var(--text-sub);
-    padding: 7px 11px;
+    padding: 6px 10px;
     border-radius: 7px;
     cursor: pointer;
     font-size: 16px;
@@ -2968,7 +3549,7 @@ templates/partials/nav.html:
   .mm-mobile-nav {
     display: none;
     position: fixed; top: var(--nav-h); left: 0; right: 0;
-    background: rgba(4,9,15,0.98);
+    background: rgba(244,250,253,0.99); /* TERANG SEPERTI THEME */
     border-bottom: 1px solid var(--border-accent);
     padding: 1.25rem 1.5rem;
     flex-direction: column; gap: 4px;
@@ -2980,19 +3561,20 @@ templates/partials/nav.html:
   .mm-mobile-nav a {
     color: var(--text-sub); text-decoration: none;
     font-size: 15px; font-weight: 500;
-    padding: 11px 16px; border-radius: 9px;
+    padding: 11px 14px; border-radius: 8px;
     transition: all 0.2s;
     border: 1px solid transparent;
   }
   .mm-mobile-nav a:hover {
-    color: var(--white);
-    background: rgba(255,255,255,0.05);
+    color: var(--blue);
+    background: var(--blue-dim);
     border-color: var(--border);
   }
   .mm-mobile-nav a.active {
     color: var(--blue);
     background: var(--blue-dim);
     border-color: var(--border-accent);
+    font-weight: 700;
   }
   .mm-mobile-nav__sep {
     height: 1px; background: var(--border);
@@ -3000,12 +3582,13 @@ templates/partials/nav.html:
   }
   .mm-mobile-nav__dummy {
     font-size: 11px; font-family: var(--font-mono);
-    color: #f59e0b;
+    color: #b45309;
     background: rgba(245,158,11,0.08);
     border: 1px solid rgba(245,158,11,0.25);
     border-radius: 9px;
     padding: 10px 16px;
     letter-spacing: 0.5px;
+    font-weight: 700;
   }
 
   @media (max-width: 768px) {
@@ -3028,6 +3611,10 @@ templates/partials/nav.html:
     <a href="{{ url_for('exercises.index') }}"
        class="mm-nav__link {% if active_page == 'exercises' %}mm-nav__link--active{% endif %}">
       Exercises
+    </a>
+    <a href="{{ url_for('games.hub') }}"
+       class="mm-nav__link {% if active_page == 'games' %}mm-nav__link--active{% endif %}">
+      Therapy Program
     </a>
     <a href="{{ url_for('sessions.history') }}"
        class="mm-nav__link {% if active_page == 'history' %}mm-nav__link--active{% endif %}">
@@ -3055,6 +3642,10 @@ templates/partials/nav.html:
      class="{% if active_page == 'exercises' %}active{% endif %}">
     Exercises
   </a>
+  <a href="{{ url_for('games.hub') }}"
+     class="{% if active_page == 'games' %}active{% endif %}">
+    Therapy Program
+  </a>
   <a href="{{ url_for('sessions.history') }}"
      class="{% if active_page == 'history' %}active{% endif %}">
     History
@@ -3062,7 +3653,7 @@ templates/partials/nav.html:
   <div class="mm-mobile-nav__sep"></div>
   {% if dummy_mode %}
     <div class="mm-mobile-nav__dummy">&#9632; Dummy Mode aktif</div>
-    <a href="{{ url_for('main.disable_dummy') }}" style="color:#f59e0b;">Exit Demo</a>
+    <a href="{{ url_for('main.disable_dummy') }}" style="color:#b45309; font-weight: 700;">Exit Demo</a>
   {% else %}
     <a href="{{ url_for('auth.logout') }}" style="color:var(--text-muted);">Logout</a>
   {% endif %}
@@ -4924,7 +5515,7 @@ templates/index.html:
     .steps-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.25rem; margin-top: 3.5rem; }
     .step-card { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 1.75rem; transition: all 0.35s; overflow: hidden; }
     .step-card:hover { border-color: var(--border-accent); transform: translateY(-5px); box-shadow: 0 18px 44px rgba(0,0,0,0.12),0 0 26px rgba(24,184,214,0.07); }
-    .step-number { font-size: 3.5rem; font-weight: 800; font-family: var(--font-mono); color: rgba(24,184,214,0.10); letter-spacing: -3px; line-height: 1; margin-bottom: 0.875rem; }
+    .step-number { font-size: 3.5rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue-dark); opacity: 0.8; letter-spacing: -3px; line-height: 1; margin-bottom: 0.875rem; }
     .step-icon { width: 44px; height: 44px; background: var(--blue-dim); border: 1px solid var(--border-accent); border-radius: 11px; display: grid; place-items: center; font-size: 19px; color: var(--blue); margin-bottom: 1rem; }
     .step-title { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
     .step-desc { font-size: 12px; color: var(--text-muted); line-height: 1.65; }
@@ -5348,7 +5939,7 @@ templates/index.html:
         <span class="line">feel stronger.</span>
       </h1>
       <p class="hero__subtitle">
-        MotionMate adalah platform rehabilitasi rumahan berbasis AI yang menggunakan <strong style="color:var(--white)">pose detection real-time</strong> untuk memastikan setiap gerakan yang Anda lakukan itu tepat, aman, dan efektif tanpa perlu datang ke klinik.
+        MotionMate adalah platform rehabilitasi komprehensif. Latih kekuatan fisik dengan <strong style="color:var(--white)">AI pose tracking</strong>, pertajam fungsi kognitif dengan <strong style="color:var(--white)">game memori</strong>, dan latih <strong style="color:var(--white)">kemampuan bicara</strong> langsung dari browser Anda.
       </p>
       <div class="hero__cta">
         {% if authenticated %}
@@ -5374,9 +5965,9 @@ templates/index.html:
         {% endif %}
       </div>
       <div class="hero__stats-row">
-        <div><div class="hero__stat-num">15M+</div><div class="hero__stat-label">pasien rehab/tahun di Indonesia</div></div>
-        <div><div class="hero__stat-num">70%</div><div class="hero__stat-label">gagal tanpa panduan profesional</div></div>
-        <div><div class="hero__stat-num">1:30K</div><div class="hero__stat-label">rasio fisioterapis vs populasi</div></div>
+        <div><div class="hero__stat-num">4 Pilar</div><div class="hero__stat-label">terapi dalam satu aplikasi</div></div>
+        <div><div class="hero__stat-num">AI</div><div class="hero__stat-label">bantuan real-time instan</div></div>
+        <div><div class="hero__stat-num">100%</div><div class="hero__stat-label">bisa dilakukan di rumah</div></div>
       </div>
     </div>
     <div class="hero__visual">
@@ -5444,51 +6035,42 @@ templates/index.html:
 
       <!-- KANAN: 2×2 grid -->
       <div class="gallery-right">
-
-        <!-- Card 1 -->
         <div class="gallery-card reveal reveal-d1">
-          <img src="{{ url_for('static', filename='assets/fisio.png') }}" alt="Latihan Real-time" style="object-position:center center;">
+          <img src="{{ url_for('static', filename='assets/fisio.png') }}" alt="Game Memori" style="object-position:center center;">
           <div class="gallery-overlay"></div>
           <div class="gallery-caption">
-            <div class="gallery-caption-label">Latihan Real-time</div>
-            <div class="gallery-caption-title">Panduan AI setiap gerakan</div>
+            <div class="gallery-caption-label">Kognitif</div>
+            <div class="gallery-caption-title">Game pola asah memori visual</div>
           </div>
         </div>
-
-        <!-- Card 2: AI Tracking -->
         <div class="gallery-card gallery-card--accent reveal reveal-d2">
-          <img src="{{ url_for('static', filename='assets/xray.jpg') }}" alt="AI Pose Tracking" style="filter:saturate(1.15) brightness(0.95);">
+          <img src="{{ url_for('static', filename='assets/xray.jpg') }}" alt="Terapi Bicara" style="filter:saturate(1.15) brightness(0.95);">
           <div class="gallery-overlay"></div>
           <div class="gallery-badge-top gallery-badge-top--sm">
             <span style="width:5px;height:5px;border-radius:50%;background:#fff;animation:pulse 2s infinite;"></span>
-            AI Live
+            Voice AI
           </div>
           <div class="gallery-caption">
-            <div class="gallery-caption-label">Computer Vision</div>
-            <div class="gallery-caption-title">33 keypoint tracking</div>
+            <div class="gallery-caption-label">Wicara</div>
+            <div class="gallery-caption-title">Evaluasi pelafalan kalimat live</div>
           </div>
         </div>
-
-        <!-- Card 3 -->
         <div class="gallery-card reveal reveal-d3">
-          <img src="{{ url_for('static', filename='assets/plant.jpeg') }}" alt="Protokol Fisioterapis">
+          <img src="{{ url_for('static', filename='assets/plant.jpeg') }}" alt="Keseharian">
           <div class="gallery-overlay"></div>
           <div class="gallery-caption">
-            <div class="gallery-caption-label">Protokol Fisioterapis</div>
-            <div class="gallery-caption-title">Didesain oleh profesional</div>
+            <div class="gallery-caption-label">ADL (Aktivitas Harian)</div>
+            <div class="gallery-caption-title">Simulasi aktivitas sehari-hari</div>
           </div>
         </div>
-
-        <!-- Card 4 -->
         <div class="gallery-card reveal reveal-d4">
-          <img src="{{ url_for('static', filename='assets/happy.jpg') }}" alt="Pasien Pulih" style="object-position:center top;filter:saturate(0.9) brightness(0.95);">
+          <img src="{{ url_for('static', filename='assets/happy.jpg') }}" alt="Dashboard" style="object-position:center top;filter:saturate(0.9) brightness(0.95);">
           <div class="gallery-overlay"></div>
           <div class="gallery-caption">
-            <div class="gallery-caption-label">Progress Dashboard</div>
-            <div class="gallery-caption-title">Pantau pemulihan Anda</div>
+            <div class="gallery-caption-label">Dashboard Terpusat</div>
+            <div class="gallery-caption-title">Satu tempat melihat semua progres</div>
           </div>
         </div>
-
       </div>
     </div>
     <!-- END GALLERY GRID -->
@@ -5512,7 +6094,6 @@ templates/index.html:
         <div style="font-size:12px;color:var(--text-sub);margin-top:6px;">Setup pertama</div>
       </div>
     </div>
-
   </div>
 </section>
 
@@ -5554,7 +6135,7 @@ templates/index.html:
         <div class="step-number">02</div>
         <div class="step-icon" style="font-size:17px;">&#9724;</div>
         <div class="step-title">Pilih Program</div>
-        <div class="step-desc">Pilih dari library latihan terverifikasi fisioterapis berdasarkan kategori: stroke, ortopedi, olahraga, lansia, atau jantung.</div>
+        <div class="step-desc">Pilih jenis terapi pemulihan yang Anda butuhkan: latihan motorik untuk fisik, game kognitif untuk melatih memori, atau terapi wicara.</div>
       </div>
       <div class="step-card reveal reveal-d2">
         <div class="step-number">03</div>
@@ -6257,7 +6838,7 @@ templates/wip.html:
       <span class="nav__logo-mark">M</span>
       <span class="nav__logo-text">MotionMate</span>
     </a>
-    <a href="{{ url_for('exercises.index') }}" class="nav__back">
+    <a href="{{ url_for('games.hub') }}" class="nav__back">
       &larr; Kembali ke Library
     </a>
   </nav>
@@ -6307,7 +6888,7 @@ templates/wip.html:
       </div>
 
       <div class="wip-actions">
-        <a href="{{ url_for('exercises.index') }}" class="btn-primary">
+        <a href="{{ url_for('games.hub') }}" class="btn-primary">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Kembali ke Library
         </a>
@@ -6337,309 +6918,31 @@ templates/wip.html:
 </body>
 </html>
 
-tests/__init__.py:...
-tests/test_app.py:
+tests/...
+app.py:
 """
-MotionMate Test Suite
-Covers: auth flows, validators, route responses, session tracking, dummy mode
+MotionMate - AI-Powered Home Rehabilitation Platform
+Entry point.
 """
-import pytest
+
+import os
 from app import create_app
-from app.models.db import db as _db
-from app.models.user import User
-from app.models.exercise import Exercise, RehabSession
 
 
-@pytest.fixture(scope='session')
-def app():
-    """Create test application."""
-    app = create_app('testing')
-    with app.app_context():
-        _db.create_all()
-        _seed_test_data()
-        yield app
-        _db.drop_all()
+app = create_app()
 
+if __name__ == "__main__":
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=debug)
 
-def _seed_test_data():
-    """Seed minimal data for tests."""
-    ex = Exercise(
-        name='Test Knee Extension',
-        category='orthopedic',
-        description='Test exercise',
-        difficulty='beginner',
-        target_sets=3,
-        target_reps=10,
-        duration_seconds=120,
-    )
-    _db.session.add(ex)
-    _db.session.commit()
+requirements.txt:
+Flask>=3.0.0
+Flask-SQLAlchemy>=3.1.0
+Werkzeug>=3.0.0
 
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture
-def auth_client(client):
-    """A test client with a registered + logged-in user."""
-    client.post('/auth/register', data={
-        'name': 'Test User',
-        'email': 'test@example.com',
-        'password': 'Password1',
-    }, follow_redirects=True)
-    client.post('/auth/login', data={
-        'email': 'test@example.com',
-        'password': 'Password1',
-    }, follow_redirects=True)
-    return client
-
-
-@pytest.fixture
-def dummy_client(client):
-    """A test client with dummy mode enabled."""
-    client.get('/dummy/enable', follow_redirects=True)
-    return client
-
-
-# ─── Auth ───────────────────────────────────────────────────────────────────
-
-class TestAuthRoutes:
-    def test_register_get(self, client):
-        r = client.get('/auth/register')
-        assert r.status_code == 200
-        assert b'Daftar' in r.data or b'register' in r.data.lower()
-
-    def test_login_get(self, client):
-        r = client.get('/auth/login')
-        assert r.status_code == 200
-
-    def test_register_success(self, client):
-        r = client.post('/auth/register', data={
-            'name': 'Budi Santoso',
-            'email': 'budi@example.com',
-            'password': 'Password1',
-        }, follow_redirects=True)
-        assert r.status_code == 200
-
-    def test_register_duplicate_email(self, client):
-        data = {'name': 'A', 'email': 'dup@example.com', 'password': 'Password1'}
-        client.post('/auth/register', data=data)
-        r = client.post('/auth/register', data=data, follow_redirects=True)
-        assert r.status_code == 200  # shows error flash, not crash
-
-    def test_login_success(self, client):
-        client.post('/auth/register', data={
-            'name': 'Login Test', 'email': 'login@example.com', 'password': 'Password1'
-        })
-        r = client.post('/auth/login', data={
-            'email': 'login@example.com', 'password': 'Password1'
-        }, follow_redirects=True)
-        assert r.status_code == 200
-
-    def test_login_wrong_password(self, client):
-        r = client.post('/auth/login', data={
-            'email': 'test@example.com', 'password': 'WrongPass1'
-        }, follow_redirects=True)
-        assert r.status_code == 200
-
-    def test_logout(self, auth_client):
-        r = auth_client.get('/auth/logout', follow_redirects=True)
-        assert r.status_code == 200
-
-
-# ─── Validators ─────────────────────────────────────────────────────────────
-
-class TestValidators:
-    def test_email_valid(self):
-        from app.utils.validators import validate_email
-        assert validate_email('user@example.com') is True
-
-    def test_email_invalid(self):
-        from app.utils.validators import validate_email
-        assert validate_email('notanemail') is False
-        assert validate_email('') is False
-        assert validate_email('@domain.com') is False
-
-    def test_password_valid(self):
-        from app.utils.validators import validate_password
-        assert validate_password('Password1') is True
-        assert validate_password('Abcdef1!') is True
-
-    def test_password_too_short(self):
-        from app.utils.validators import validate_password
-        assert validate_password('Ab1') is False
-
-    def test_password_no_uppercase(self):
-        from app.utils.validators import validate_password
-        assert validate_password('password1') is False
-
-    def test_password_no_digit(self):
-        from app.utils.validators import validate_password
-        assert validate_password('Password') is False
-
-    def test_name_valid(self):
-        from app.utils.validators import validate_name
-        assert validate_name('Budi Santoso') is True
-
-    def test_name_too_short(self):
-        from app.utils.validators import validate_name
-        assert validate_name('A') is False
-
-    def test_name_too_long(self):
-        from app.utils.validators import validate_name
-        assert validate_name('A' * 101) is False
-
-
-# ─── Main routes ────────────────────────────────────────────────────────────
-
-class TestMainRoutes:
-    def test_landing_page(self, client):
-        r = client.get('/')
-        assert r.status_code == 200
-        assert b'MotionMate' in r.data
-
-    def test_enable_dummy_mode(self, client):
-        r = client.get('/dummy/enable', follow_redirects=True)
-        assert r.status_code == 200
-
-    def test_disable_dummy_mode(self, client):
-        client.get('/dummy/enable')
-        r = client.get('/dummy/disable', follow_redirects=True)
-        assert r.status_code == 200
-
-
-# ─── Dashboard routes ────────────────────────────────────────────────────────
-
-class TestDashboardRoutes:
-    def test_dashboard_requires_auth(self, client):
-        r = client.get('/dashboard/', follow_redirects=True)
-        # Should redirect to login when not authenticated
-        assert r.status_code == 200
-
-    def test_dashboard_authenticated(self, auth_client):
-        r = auth_client.get('/dashboard/')
-        assert r.status_code == 200
-
-    def test_dashboard_dummy_mode(self, dummy_client):
-        r = dummy_client.get('/dashboard/')
-        assert r.status_code == 200
-        assert b'Dummy' in r.data or b'dummy' in r.data
-
-
-# ─── Exercises routes ────────────────────────────────────────────────────────
-
-class TestExerciseRoutes:
-    def test_exercise_list_authenticated(self, auth_client):
-        r = auth_client.get('/exercises/')
-        assert r.status_code == 200
-
-    def test_exercise_list_dummy(self, dummy_client):
-        r = dummy_client.get('/exercises/')
-        assert r.status_code == 200
-
-    def test_exercise_detail_dummy(self, dummy_client):
-        r = dummy_client.get('/exercises/1')
-        assert r.status_code == 200
-
-    def test_exercise_404_high_id(self, auth_client):
-        r = auth_client.get('/exercises/99999')
-        assert r.status_code in (200, 404)  # 404 page or redirect
-
-
-# ─── Session routes ──────────────────────────────────────────────────────────
-
-class TestSessionRoutes:
-    def test_history_authenticated(self, auth_client):
-        r = auth_client.get('/sessions/history')
-        assert r.status_code == 200
-
-    def test_history_dummy(self, dummy_client):
-        r = dummy_client.get('/sessions/history')
-        assert r.status_code == 200
-
-    def test_start_session_authenticated(self, auth_client):
-        r = auth_client.post('/sessions/start/1', follow_redirects=True)
-        assert r.status_code == 200
-
-    def test_complete_session(self, auth_client, app):
-        """Start a session and complete it."""
-        # Start session first
-        auth_client.post('/sessions/start/1', follow_redirects=True)
-        with app.app_context():
-            session = RehabSession.query.first()
-            if session:
-                r = auth_client.post(f'/sessions/complete/{session.id}', data={
-                    'reps_completed': '10',
-                    'sets_completed': '3',
-                    'duration_seconds': '120',
-                    'accuracy_score': '85.5',
-                }, follow_redirects=True)
-                assert r.status_code == 200
-
-
-# ─── Accuracy clamping ───────────────────────────────────────────────────────
-
-class TestAccuracyClamping:
-    def test_accuracy_clamp_high(self, auth_client, app):
-        """Accuracy above 100 should be clamped."""
-        auth_client.post('/sessions/start/1', follow_redirects=True)
-        with app.app_context():
-            session = RehabSession.query.first()
-            if session:
-                auth_client.post(f'/sessions/complete/{session.id}', data={
-                    'reps_completed': '10',
-                    'sets_completed': '3',
-                    'duration_seconds': '120',
-                    'accuracy_score': '150',  # Over 100
-                }, follow_redirects=True)
-                updated = RehabSession.query.get(session.id)
-                if updated:
-                    assert updated.accuracy_score <= 100.0
-
-    def test_accuracy_clamp_low(self, auth_client, app):
-        """Accuracy below 0 should be clamped."""
-        auth_client.post('/sessions/start/1', follow_redirects=True)
-        with app.app_context():
-            session = RehabSession.query.first()
-            if session:
-                auth_client.post(f'/sessions/complete/{session.id}', data={
-                    'reps_completed': '5',
-                    'sets_completed': '2',
-                    'duration_seconds': '60',
-                    'accuracy_score': '-20',  # Negative
-                }, follow_redirects=True)
-                updated = RehabSession.query.get(session.id)
-                if updated:
-                    assert updated.accuracy_score >= 0.0
-
-
-# ─── User model ──────────────────────────────────────────────────────────────
-
-class TestUserModel:
-    def test_password_hashing(self, app):
-        with app.app_context():
-            u = User(name='Test', email='hash@example.com')
-            u.set_password('MyPassword1')
-            assert u.check_password('MyPassword1') is True
-            assert u.check_password('WrongPassword') is False
-
-    def test_password_not_stored_plaintext(self, app):
-        with app.app_context():
-            u = User(name='Test', email='plain@example.com')
-            u.set_password('SecretPass1')
-            assert 'SecretPass1' not in u.password_hash
-
-
-# ─── Open redirect protection ────────────────────────────────────────────────
-
-class TestOpenRedirect:
-    def test_login_next_param_external_blocked(self, client):
-        """next= pointing to external URL should not redirect there."""
-        r = client.post('/auth/login?next=https://evil.com', data={
-            'email': 'test@example.com',
-            'password': 'Password1',
-        }, follow_redirects=False)
-        location = r.headers.get('Location', '')
-        assert 'evil.com' not in location
+pytests.ini:
+[pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*

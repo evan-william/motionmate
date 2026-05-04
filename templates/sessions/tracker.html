@@ -72,6 +72,13 @@
     .mode-tab.active { background: var(--bg-card); color: var(--blue); border-bottom: 2px solid var(--blue); }
     .mode-tab:hover:not(.active) { background: var(--bg-2); color: var(--text-sub); }
 
+    /* ─── EXERCISE MODE TOGGLE ─── */
+    .ex-mode-bar { display:flex; gap:0; background:var(--bg-3); border:1px solid var(--border); border-top:none; overflow:hidden; }
+    .ex-mode-btn { flex:1; padding:9px 14px; font-size:12px; font-weight:700; font-family:var(--font-mono); text-align:center; cursor:pointer; border:none; background:transparent; color:var(--text-muted); transition:all .2s; display:flex; align-items:center; justify-content:center; gap:7px; border-right:1px solid var(--border); -webkit-tap-highlight-color:transparent; }
+    .ex-mode-btn:last-child { border-right:none; }
+    .ex-mode-btn.active { background:var(--bg-card); color:var(--blue); border-bottom:2px solid var(--blue); font-weight:800; }
+    .ex-mode-btn:hover:not(.active) { background:var(--bg-2); color:var(--text-sub); }
+
     /* ─── CAMERA CARD ─── */
     .camera-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0 0 var(--radius-xl) var(--radius-xl); border-top: none; overflow: hidden; box-shadow: 0 4px 16px rgba(11,155,188,0.08); }
 
@@ -92,9 +99,6 @@
     .camera-overlay-bot { position: absolute; bottom: 0; left: 0; right: 0; padding: .875rem 1rem; background: linear-gradient(to top, rgba(8,25,41,0.90), transparent); z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
     .ai-status-pill { display: flex; align-items: center; gap: 7px; background: rgba(8,25,41,0.75); border: 1px solid rgba(11,155,188,0.4); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-family: var(--font-mono); color: #fff; font-weight: 700; backdrop-filter: blur(8px); }
-    .ai-status-pill .dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-    .ai-status-pill .dot-orange { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
-    .ai-status-pill .dot-red { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
 
     .timer-badge { font-size: 13px; font-family: var(--font-mono); color: #fff; background: rgba(8,25,41,0.75); padding: 5px 11px; border-radius: 7px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(8px); }
 
@@ -330,7 +334,7 @@
 
         <!-- LEFT: Camera / Video -->
         <div>
-          <!-- TABS -->
+          <!-- VIEW TABS -->
           <div class="mode-tabs">
             <button class="mode-tab active" id="tabAI" onclick="switchTab('ai')">
               <span id="aiTabDot" style="width:7px;height:7px;border-radius:50%;background:var(--text-muted);flex-shrink:0;"></span>
@@ -341,31 +345,39 @@
             </button>
           </div>
 
+          <!-- EXERCISE MODE TOGGLE (shown under tabs, inside AI panel) -->
+          <div class="ex-mode-bar" id="exModeBar">
+            <button class="ex-mode-btn active" id="modeKnee" onclick="setExerciseMode('knee', this)">
+              🦵 Knee Extension
+            </button>
+            <button class="ex-mode-btn" id="modeBicep" onclick="setExerciseMode('bicep', this)">
+              💪 Bicep Curl
+            </button>
+          </div>
+
           <!-- AI PANEL -->
           <div id="aiPanel">
             <div class="camera-card">
               <div class="camera-area" id="cameraArea">
-                <!-- Hidden video element for MediaPipe -->
                 <video id="videoElement" playsinline autoplay muted></video>
-                <!-- Canvas for pose overlay -->
                 <canvas id="poseCanvas"></canvas>
 
                 <!-- Overlay TOP -->
                 <div class="camera-overlay-top">
                   <div class="ai-status-pill" id="aiStatusPill">
-                    <span class="live-dot dot-orange" id="statusDot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px #f59e0b;flex-shrink:0;"></span>
+                    <span class="live-dot" id="statusDot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px #f59e0b;flex-shrink:0;"></span>
                     <span id="aiStatusText">Siap — Aktifkan Kamera</span>
                   </div>
                   <div class="timer-badge" id="timerDisplay2">00:00</div>
                 </div>
 
-                <!-- PLACEHOLDER (shown before camera starts) -->
+                <!-- PLACEHOLDER -->
                 <div class="cam-placeholder" id="camPlaceholder">
                   <div class="loading-ring" id="loadingRing"></div>
                   <div id="placeholderContent">
                     <div class="cam-placeholder-icon">📷</div>
                     <div class="cam-placeholder-title">Aktifkan AI Pose Tracker</div>
-                    <div class="cam-placeholder-desc">MediaPipe akan melacak postur tubuh Anda secara real-time dan menghitung rep otomatis. Pastikan kamera menghadap seluruh tubuh Anda dari samping.</div>
+                    <div class="cam-placeholder-desc" id="placeholderDesc">MediaPipe melacak postur real-time dan menghitung rep otomatis. Pastikan seluruh tubuh terlihat dari samping untuk Knee Extension, atau hadapkan lengan ke kamera untuk Bicep Curl.</div>
                     <button class="btn-start-cam" id="startCamBtn" onclick="startCamera()">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                       Aktifkan Kamera + AI
@@ -374,15 +386,15 @@
                   </div>
                 </div>
 
-                <!-- Overlay BOT (hidden until camera active) -->
+                <!-- Overlay BOT -->
                 <div class="camera-overlay-bot" id="cameraOverlayBot" style="display:none;">
                   <div class="feedback-box" id="feedbackBox">
                     <div class="feedback-main" id="feedbackMain">Mulai gerakan...</div>
-                    <div class="feedback-sub" id="feedbackSub">Luruskan lutut, tahan 2 detik</div>
+                    <div class="feedback-sub" id="feedbackSub">Ikuti instruksi di sini</div>
                   </div>
                   <div class="angle-badge">
                     <div class="angle-val" id="kneeAngleDisplay">--°</div>
-                    <div class="angle-label">Knee Angle</div>
+                    <div class="angle-label" id="angleBadgeLabel">Knee Angle</div>
                   </div>
                 </div>
 
@@ -392,7 +404,7 @@
 
               <div class="camera-card-footer">
                 <div class="camera-footer-label">
-                  Latihan: <strong>{{ ex_name }}</strong>
+                  Latihan: <strong id="footerExName">{{ ex_name }}</strong>
                   &nbsp;|&nbsp;
                   <span id="footerAIStatus" style="color:var(--text-muted);">AI: Standby</span>
                 </div>
@@ -409,36 +421,20 @@
           <div id="videoPanel" style="display:none;">
             <div class="camera-card">
               <div class="video-area">
-                <!-- Knee Extension tutorial video (YouTube embed, no autoplay) -->
                 <iframe
                   src="https://www.youtube.com/embed/YyvWstG7ygo?rel=0&modestbranding=1"
-                  title="Knee Extension Exercise Guide"
+                  title="Exercise Guide"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowfullscreen>
                 </iframe>
               </div>
               <div class="guide-steps">
-                <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Langkah-langkah {{ ex_name }}</div>
-                <div class="guide-step active">
-                  <span class="guide-step-num">1</span>
-                  <span class="guide-step-text">Duduk tegak di kursi, punggung menempel sandaran, kaki menggantung bebas di atas lantai.</span>
-                </div>
-                <div class="guide-step">
-                  <span class="guide-step-num">2</span>
-                  <span class="guide-step-text">Perlahan luruskan lutut hingga kaki sejajar dengan lantai. Hitung 2 detik saat naik.</span>
-                </div>
-                <div class="guide-step">
-                  <span class="guide-step-num">3</span>
-                  <span class="guide-step-text">Tahan posisi lurus 2–3 detik. Rasakan kontraksi otot paha depan (quadriceps).</span>
-                </div>
-                <div class="guide-step">
-                  <span class="guide-step-num">4</span>
-                  <span class="guide-step-text">Turunkan kaki kembali perlahan. Hitung 3 detik saat turun. Jangan dibanting.</span>
-                </div>
-                <div class="guide-step">
-                  <span class="guide-step-num">5</span>
-                  <span class="guide-step-text">Istirahat 1 detik, ulangi. Setelah selesai 1 set, istirahat 60 detik, lanjut set berikutnya.</span>
-                </div>
+                <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Panduan Gerakan</div>
+                <div class="guide-step active"><span class="guide-step-num">1</span><span class="guide-step-text">Pilih mode latihan di atas: Knee Extension atau Bicep Curl.</span></div>
+                <div class="guide-step"><span class="guide-step-num">2</span><span class="guide-step-text">Aktifkan kamera AI lalu posisikan tubuh sesuai mode yang dipilih.</span></div>
+                <div class="guide-step"><span class="guide-step-num">3</span><span class="guide-step-text">Ikuti umpan balik real-time di layar. Rep akan dihitung otomatis.</span></div>
+                <div class="guide-step"><span class="guide-step-num">4</span><span class="guide-step-text">Istirahat 60 detik antar set. Tekan "Set Selesai" lalu lanjutkan.</span></div>
+                <div class="guide-step"><span class="guide-step-num">5</span><span class="guide-step-text">Setelah semua set selesai, klik "Selesaikan & Simpan Sesi".</span></div>
               </div>
             </div>
           </div>
@@ -451,10 +447,10 @@
           <!-- Exercise info -->
           <div class="exercise-info-card">
             <div class="ex-info-header">
-              <div class="ex-info-icon">⭕</div>
+              <div class="ex-info-icon" id="exInfoIcon">⭕</div>
               <div>
-                <div class="ex-info-cat">{{ ex_cat }}</div>
-                <div class="ex-info-name">{{ ex_name }}</div>
+                <div class="ex-info-cat" id="exInfoCat">{{ ex_cat }}</div>
+                <div class="ex-info-name" id="exInfoName">{{ ex_name }}</div>
               </div>
             </div>
             <div class="ex-info-body">
@@ -484,7 +480,7 @@
           <!-- Rep Counter -->
           <div class="reps-card">
             <div class="reps-header">
-              <div class="reps-title">Rep Counter</div>
+              <div class="reps-title" id="repCardTitle">Rep Counter</div>
               <div class="set-badges" id="setBadges">
                 {% for i in range(ex_sets) %}
                 <div class="set-badge {% if i == 0 %}active{% endif %}" id="setbadge{{ i }}">{{ i+1 }}</div>
@@ -492,10 +488,9 @@
               </div>
             </div>
 
-            <!-- AI info when camera is active -->
             <div class="ai-info-box" id="aiInfoBox" style="display:none;">
               <span class="ai-info-icon">🤖</span>
-              <div class="ai-info-text">AI menghitung rep otomatis via <span>knee angle tracking</span>. Rep dihitung saat lutut lurus &gt;160° dan kembali &lt;100°.</div>
+              <div class="ai-info-text" id="aiInfoText">AI menghitung rep otomatis via <span>knee angle tracking</span>. Rep dihitung saat lutut lurus &gt;158° dan kembali &lt;100°.</div>
             </div>
 
             <div class="reps-counter">
@@ -584,520 +579,637 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
   <script>
-    // ─── CONSTANTS ───────────────────────────────────────────────────
-      const TARGET_SETS = {{ ex_sets }};
-      const TARGET_REPS = {{ ex_reps }};
-      const TARGET_DUR  = {{ ex_dur }};
-      const EX_CAT      = "{{ ex_cat }}";
+    // ─── CONSTANTS ────────────────────────────────────────────────────
+    const TARGET_SETS = {{ ex_sets }};
+    const TARGET_REPS = {{ ex_reps }};
+    const TARGET_DUR  = {{ ex_dur }};
+    const EX_CAT      = "{{ ex_cat }}";
 
-      // ─── STATE ───────────────────────────────────────────────────────
-      let currentSet    = 0;
-      let currentReps   = 0;
-      let completedSets = 0;
-      let totalReps     = 0;
-      let timerSec      = 0;
-      let timerRunning  = false;
-      let timerInterval = null;
-      let accuracy      = 50;
-      let accuracyReadings = [];
+    // ─── STATE ────────────────────────────────────────────────────────
+    let currentSet    = 0;
+    let currentReps   = 0;
+    let completedSets = 0;
+    let totalReps     = 0;
+    let timerSec      = 0;
+    let timerRunning  = false;
+    let timerInterval = null;
+    let accuracy      = 50;
+    let accuracyReadings = [];
 
-      // AI State
-      let pose          = null;
-      let mpCamera      = null;
-      let cameraActive  = false;
-      let repState      = 'down';
-      let toastTimeout  = null;
-      let lastToastTime = 0;
+    // AI State
+    let pose          = null;
+    let mpCamera      = null;
+    let cameraActive  = false;
+    let repState      = 'down';
+    let toastTimeout  = null;
+    let lastToastTime = 0;
 
-      // ─── ANGLE SMOOTHING ─────────────────────────────────────────────
-      // Keeps last N angle readings per joint and returns moving average
-      const angleBuffer = { knee: [] };
-      const BUFFER_SIZE = 6; // smooth over 6 frames (~200ms at 30fps)
+    // ─── EXERCISE MODE ────────────────────────────────────────────────
+    let exerciseMode = 'knee'; // 'knee' | 'bicep'
 
-      function smoothAngle(key, rawAngle) {
-        const buf = angleBuffer[key];
-        buf.push(rawAngle);
-        if (buf.length > BUFFER_SIZE) buf.shift();
-        return buf.reduce((a, b) => a + b, 0) / buf.length;
+    function setExerciseMode(mode, btn) {
+      exerciseMode = mode;
+      document.querySelectorAll('.ex-mode-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      // Reset angle buffers & state machine
+      angleBuffer.knee  = [];
+      angleBuffer.elbow = [];
+      repState      = 'down';
+      stateHoldCount = 0;
+      pendingState   = null;
+
+      // Update angle badge label
+      const lbl = document.getElementById('angleBadgeLabel');
+      if (lbl) lbl.textContent = mode === 'knee' ? 'Knee Angle' : 'Elbow Angle';
+
+      // Update AI info text
+      const infoTxt = document.getElementById('aiInfoText');
+      if (infoTxt) {
+        if (mode === 'knee') {
+          infoTxt.innerHTML = 'AI menghitung rep otomatis via <span>knee angle tracking</span>. Rep dihitung saat lutut lurus &gt;158° dan kembali &lt;100°.';
+        } else {
+          infoTxt.innerHTML = 'AI menghitung rep via <span>elbow angle tracking</span>. Rep dihitung saat siku tekuk &lt;50° (curl penuh) lalu kembali lurus &gt;140°.';
+        }
       }
 
-      // ─── BETTER REP STATE MACHINE ────────────────────────────────────
-      // Requires holding a state for MIN_HOLD_FRAMES before transition
-      // Prevents jitter from triggering phantom reps
-      const MIN_HOLD_FRAMES = 5;
-      let stateHoldCount = 0;
-      let pendingState   = null;
+      // Update exercise card icon & name
+      const icon = document.getElementById('exInfoIcon');
+      const namEl = document.getElementById('exInfoName');
+      const catEl = document.getElementById('exInfoCat');
+      if (mode === 'bicep') {
+        if (icon)  icon.textContent  = '💪';
+        if (namEl) namEl.textContent = 'Bicep Curl';
+        if (catEl) catEl.textContent = 'UPPER BODY';
+        document.getElementById('footerExName').textContent = 'Bicep Curl';
+      } else {
+        if (icon)  icon.textContent  = '⭕';
+        if (namEl) namEl.textContent = '{{ ex_name }}';
+        if (catEl) catEl.textContent = '{{ ex_cat }}'.toUpperCase();
+        document.getElementById('footerExName').textContent = '{{ ex_name }}';
+      }
 
-      function updateRepState(newState) {
-        if (newState === repState) {
-          stateHoldCount = 0;
-          pendingState = null;
-          return false; // no change
-        }
-        if (newState !== pendingState) {
-          pendingState = newState;
-          stateHoldCount = 0;
-        }
-        stateHoldCount++;
-        if (stateHoldCount >= MIN_HOLD_FRAMES) {
-          repState = newState;
-          stateHoldCount = 0;
-          pendingState = null;
-          return true; // state changed
-        }
+      showToast('info',
+        mode === 'knee' ? '🦵' : '💪',
+        mode === 'knee'
+          ? 'Mode: Knee Extension — duduk menyamping ke kamera.'
+          : 'Mode: Bicep Curl — hadapkan lengan ke kamera, tekuk-luruskan siku.'
+      );
+    }
+
+    // ─── ANGLE SMOOTHING ─────────────────────────────────────────────
+    const angleBuffer = { knee: [], elbow: [] };
+    const BUFFER_SIZE = 6;
+
+    function smoothAngle(key, rawAngle) {
+      const buf = angleBuffer[key];
+      buf.push(rawAngle);
+      if (buf.length > BUFFER_SIZE) buf.shift();
+      return buf.reduce((a, b) => a + b, 0) / buf.length;
+    }
+
+    // ─── REP STATE MACHINE with hold-frames debounce ─────────────────
+    const MIN_HOLD_FRAMES = 5;
+    let stateHoldCount = 0;
+    let pendingState   = null;
+
+    function updateRepState(newState) {
+      if (newState === repState) {
+        stateHoldCount = 0;
+        pendingState = null;
         return false;
       }
-
-      // ─── TAB SWITCHING ────────────────────────────────────────────────
-      function switchTab(tab) {
-        const tabAI      = document.getElementById('tabAI');
-        const tabVideo   = document.getElementById('tabVideo');
-        const aiPanel    = document.getElementById('aiPanel');
-        const videoPanel = document.getElementById('videoPanel');
-        if (tab === 'ai') {
-          tabAI.classList.add('active');
-          tabVideo.classList.remove('active');
-          aiPanel.style.display = 'block';
-          videoPanel.style.display = 'none';
-        } else {
-          tabVideo.classList.add('active');
-          tabAI.classList.remove('active');
-          aiPanel.style.display = 'none';
-          videoPanel.style.display = 'block';
-        }
-      }
-
-      // ─── TIMER ───────────────────────────────────────────────────────
-      function pad(n) { return String(n).padStart(2, '0'); }
-      function timerTick() {
-        timerSec++;
-        const m = Math.floor(timerSec / 60), s = timerSec % 60;
-        const val = pad(m) + ':' + pad(s);
-        document.getElementById('timerDisplay').textContent  = val;
-        document.getElementById('timerDisplay2').textContent = val;
-      }
-      function timerToggle() {
-        if (timerRunning) {
-          clearInterval(timerInterval); timerRunning = false;
-          document.getElementById('timerDisplay').className = 'timer-display paused';
-          document.getElementById('timerStartBtn').innerHTML = '▶ Lanjut';
-        } else {
-          timerInterval = setInterval(timerTick, 1000); timerRunning = true;
-          document.getElementById('timerDisplay').className = 'timer-display running';
-          document.getElementById('timerStartBtn').innerHTML = '⏸ Pause';
-        }
-      }
-      function timerReset() {
-        clearInterval(timerInterval); timerRunning = false; timerSec = 0;
-        document.getElementById('timerDisplay').textContent  = '00:00';
-        document.getElementById('timerDisplay2').textContent = '00:00';
-        document.getElementById('timerDisplay').className = 'timer-display';
-        document.getElementById('timerStartBtn').innerHTML = '▶ Mulai';
-      }
-
-      // ─── REP COUNTER ─────────────────────────────────────────────────
-      function updatePips() {
-        for (let i = 0; i < TARGET_REPS; i++) {
-          const pip = document.getElementById('pip' + i);
-          if (!pip) continue;
-          pip.className = 'rep-pip' + (i < currentReps ? ' done' : i === currentReps ? ' current' : '');
-        }
-        document.getElementById('repCount').textContent   = currentReps;
-        document.getElementById('currentRep').textContent = currentReps;
-        document.getElementById('nextSetBtn').disabled    = currentReps < TARGET_REPS;
-        if (currentReps === 1 && !timerRunning) timerToggle();
-      }
-      function incrementRep() {
-        if (currentReps >= TARGET_REPS) return;
-        currentReps++; totalReps++;
-        flashRepAnim(); updatePips(); updateOverall();
-      }
-      function decrementRep() {
-        if (currentReps <= 0) return;
-        currentReps--; totalReps = Math.max(0, totalReps - 1);
-        updatePips(); updateOverall();
-      }
-      function flashRepAnim() {
-        const el = document.getElementById('repFlash');
-        el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 400);
-      }
-      function nextSet() {
-        if (currentReps < TARGET_REPS) return;
-        completedSets++;
-        updateSetBadges();
-        if (completedSets >= TARGET_SETS) { openFinishModal(); return; }
-        currentSet  = completedSets;
-        currentReps = 0;
-        repState     = 'down';
+      if (newState !== pendingState) {
+        pendingState = newState;
         stateHoldCount = 0;
-        pendingState   = null;
-        angleBuffer.knee = [];
-        updatePips(); updateOverall();
-        showToast('info', '✅', `Set ${completedSets} selesai! Istirahat 60 detik lalu lanjut set ${completedSets + 1}`);
       }
-      function updateSetBadges() {
-        for (let i = 0; i < TARGET_SETS; i++) {
-          const b = document.getElementById('setbadge' + i);
-          if (!b) continue;
-          if (i < completedSets)       b.className = 'set-badge done';
-          else if (i === completedSets) b.className = 'set-badge active';
-          else                          b.className = 'set-badge';
-        }
+      stateHoldCount++;
+      if (stateHoldCount >= MIN_HOLD_FRAMES) {
+        repState = newState;
+        stateHoldCount = 0;
+        pendingState = null;
+        return true;
       }
-      function updateOverall() {
-        const totalPossible = TARGET_SETS * TARGET_REPS;
-        const done = completedSets * TARGET_REPS + currentReps;
-        const pct  = Math.round(done / totalPossible * 100);
-        document.getElementById('overallBar').style.width   = pct + '%';
-        document.getElementById('overallPct').textContent   = pct + '%';
-        document.getElementById('overallLabel').textContent = 'Set ' + (completedSets + 1) + ' dari ' + TARGET_SETS;
+      return false;
+    }
+
+    // ─── TAB SWITCHING ────────────────────────────────────────────────
+    function switchTab(tab) {
+      const tabAI      = document.getElementById('tabAI');
+      const tabVideo   = document.getElementById('tabVideo');
+      const aiPanel    = document.getElementById('aiPanel');
+      const videoPanel = document.getElementById('videoPanel');
+      const exModeBar  = document.getElementById('exModeBar');
+      if (tab === 'ai') {
+        tabAI.classList.add('active');
+        tabVideo.classList.remove('active');
+        aiPanel.style.display   = 'block';
+        videoPanel.style.display = 'none';
+        exModeBar.style.display  = 'flex';
+      } else {
+        tabVideo.classList.add('active');
+        tabAI.classList.remove('active');
+        aiPanel.style.display   = 'none';
+        videoPanel.style.display = 'block';
+        exModeBar.style.display  = 'none';
+      }
+    }
+
+    // ─── TIMER ────────────────────────────────────────────────────────
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function timerTick() {
+      timerSec++;
+      const m = Math.floor(timerSec / 60), s = timerSec % 60;
+      const val = pad(m) + ':' + pad(s);
+      document.getElementById('timerDisplay').textContent  = val;
+      document.getElementById('timerDisplay2').textContent = val;
+    }
+    function timerToggle() {
+      if (timerRunning) {
+        clearInterval(timerInterval); timerRunning = false;
+        document.getElementById('timerDisplay').className = 'timer-display paused';
+        document.getElementById('timerStartBtn').innerHTML = '▶ Lanjut';
+      } else {
+        timerInterval = setInterval(timerTick, 1000); timerRunning = true;
+        document.getElementById('timerDisplay').className = 'timer-display running';
+        document.getElementById('timerStartBtn').innerHTML = '⏸ Pause';
+      }
+    }
+    function timerReset() {
+      clearInterval(timerInterval); timerRunning = false; timerSec = 0;
+      document.getElementById('timerDisplay').textContent  = '00:00';
+      document.getElementById('timerDisplay2').textContent = '00:00';
+      document.getElementById('timerDisplay').className = 'timer-display';
+      document.getElementById('timerStartBtn').innerHTML = '▶ Mulai';
+    }
+
+    // ─── REP COUNTER ──────────────────────────────────────────────────
+    function updatePips() {
+      for (let i = 0; i < TARGET_REPS; i++) {
+        const pip = document.getElementById('pip' + i);
+        if (!pip) continue;
+        pip.className = 'rep-pip' + (i < currentReps ? ' done' : i === currentReps ? ' current' : '');
+      }
+      document.getElementById('repCount').textContent   = currentReps;
+      document.getElementById('currentRep').textContent = currentReps;
+      document.getElementById('nextSetBtn').disabled    = currentReps < TARGET_REPS;
+      if (currentReps === 1 && !timerRunning) timerToggle();
+    }
+    function incrementRep() {
+      if (currentReps >= TARGET_REPS) return;
+      currentReps++; totalReps++;
+      flashRepAnim(); updatePips(); updateOverall();
+    }
+    function decrementRep() {
+      if (currentReps <= 0) return;
+      currentReps--; totalReps = Math.max(0, totalReps - 1);
+      updatePips(); updateOverall();
+    }
+    function flashRepAnim() {
+      const el = document.getElementById('repFlash');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 400);
+    }
+    function nextSet() {
+      if (currentReps < TARGET_REPS) return;
+      completedSets++;
+      updateSetBadges();
+      if (completedSets >= TARGET_SETS) { openFinishModal(); return; }
+      currentSet   = completedSets;
+      currentReps  = 0;
+      repState     = 'down';
+      stateHoldCount = 0;
+      pendingState   = null;
+      angleBuffer.knee  = [];
+      angleBuffer.elbow = [];
+      updatePips(); updateOverall();
+      showToast('info', '✅', `Set ${completedSets} selesai! Istirahat 60 detik lalu lanjut set ${completedSets + 1}`);
+    }
+    function updateSetBadges() {
+      for (let i = 0; i < TARGET_SETS; i++) {
+        const b = document.getElementById('setbadge' + i);
+        if (!b) continue;
+        if (i < completedSets)        b.className = 'set-badge done';
+        else if (i === completedSets) b.className = 'set-badge active';
+        else                          b.className = 'set-badge';
+      }
+    }
+    function updateOverall() {
+      const totalPossible = TARGET_SETS * TARGET_REPS;
+      const done = completedSets * TARGET_REPS + currentReps;
+      const pct  = Math.round(done / totalPossible * 100);
+      document.getElementById('overallBar').style.width   = pct + '%';
+      document.getElementById('overallPct').textContent   = pct + '%';
+      document.getElementById('overallLabel').textContent = 'Set ' + (completedSets + 1) + ' dari ' + TARGET_SETS;
+    }
+
+    // ─── ACCURACY ─────────────────────────────────────────────────────
+    function updateAccuracy(val, fromSlider) {
+      accuracy = parseInt(val);
+      document.getElementById('accValDisplay').textContent = accuracy + '%';
+      document.getElementById('accuracySlider').value      = accuracy;
+      const dashoffset = 175 - (175 * accuracy / 100);
+      document.getElementById('accRingFill').style.strokeDashoffset = dashoffset;
+      const color = accuracy >= 80 ? '#4ade80' : accuracy >= 60 ? 'var(--blue)' : '#fbbf24';
+      document.getElementById('accRingFill').style.stroke = color;
+    }
+    updateAccuracy(50);
+
+    // ─── TOAST ────────────────────────────────────────────────────────
+    function showToast(type, icon, msg, duration = 3500) {
+      const now = Date.now();
+      if (now - lastToastTime < 1800) return;
+      lastToastTime = now;
+      const toast = document.getElementById('aiToast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastMsg').textContent  = msg;
+      toast.className = 'ai-toast show ' + type;
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.className = 'ai-toast', duration);
+    }
+
+    // ─── ANGLE CALCULATION ────────────────────────────────────────────
+    function calcAngle(a, b, c) {
+      const v1x = a.x - b.x, v1y = a.y - b.y;
+      const v2x = c.x - b.x, v2y = c.y - b.y;
+      const dot  = v1x * v2x + v1y * v2y;
+      const mag1 = Math.sqrt(v1x * v1x + v1y * v1y);
+      const mag2 = Math.sqrt(v2x * v2x + v2y * v2y);
+      if (mag1 === 0 || mag2 === 0) return 0;
+      return (Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2)))) * 180) / Math.PI;
+    }
+
+    // ─── LANDMARK HELPERS ─────────────────────────────────────────────
+    function getBetterSide(landmarks) {
+      // Knee: hip(23/24) → knee(25/26) → ankle(27/28)
+      const lHip  = landmarks[23], lKnee = landmarks[25], lAnkle = landmarks[27];
+      const rHip  = landmarks[24], rKnee = landmarks[26], rAnkle = landmarks[28];
+      const lVis  = (lHip.visibility + lKnee.visibility + lAnkle.visibility) / 3;
+      const rVis  = (rHip.visibility + rKnee.visibility + rAnkle.visibility) / 3;
+      return lVis >= rVis
+        ? { hip: lHip, knee: lKnee, ankle: lAnkle, vis: lVis, side: 'kiri' }
+        : { hip: rHip, knee: rKnee, ankle: rAnkle, vis: rVis, side: 'kanan' };
+    }
+
+    function getBetterElbowSide(landmarks) {
+      // Bicep curl: shoulder(11/12) → elbow(13/14) → wrist(15/16)
+      const lShoulder = landmarks[11], lElbow = landmarks[13], lWrist = landmarks[15];
+      const rShoulder = landmarks[12], rElbow = landmarks[14], rWrist = landmarks[16];
+      const lVis = (lShoulder.visibility + lElbow.visibility + lWrist.visibility) / 3;
+      const rVis = (rShoulder.visibility + rElbow.visibility + rWrist.visibility) / 3;
+      return lVis >= rVis
+        ? { shoulder: lShoulder, elbow: lElbow, wrist: lWrist, vis: lVis, side: 'kiri' }
+        : { shoulder: rShoulder, elbow: rElbow, wrist: rWrist, vis: rVis, side: 'kanan' };
+    }
+
+    // ─── MEDIAPIPE POSE CALLBACK ──────────────────────────────────────
+    function onPoseResults(results) {
+      const canvas = document.getElementById('poseCanvas');
+      const video  = document.getElementById('videoElement');
+      const ctx    = canvas.getContext('2d');
+
+      canvas.width  = video.videoWidth  || canvas.offsetWidth;
+      canvas.height = video.videoHeight || canvas.offsetHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw mirrored video frame
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      if (results.image) ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      if (!results.poseLandmarks) {
+        setFeedback('warn', 'Postur tidak terdeteksi', 'Pastikan seluruh tubuh/lengan terlihat kamera');
+        setAIStatus('orange', 'Mendeteksi...');
+        return;
       }
 
-      // ─── ACCURACY ────────────────────────────────────────────────────
-      function updateAccuracy(val, fromSlider) {
-        accuracy = parseInt(val);
-        document.getElementById('accValDisplay').textContent = accuracy + '%';
-        document.getElementById('accuracySlider').value      = accuracy;
-        const dashoffset = 175 - (175 * accuracy / 100);
-        document.getElementById('accRingFill').style.strokeDashoffset = dashoffset;
-        const color = accuracy >= 80 ? '#4ade80' : accuracy >= 60 ? 'var(--blue)' : '#fbbf24';
-        document.getElementById('accRingFill').style.stroke = color;
-      }
-      updateAccuracy(50);
+      const lm = results.poseLandmarks;
 
-      // ─── TOAST ───────────────────────────────────────────────────────
-      function showToast(type, icon, msg, duration = 3500) {
-        const now = Date.now();
-        if (now - lastToastTime < 2000) return;
-        lastToastTime = now;
-        const toast = document.getElementById('aiToast');
-        document.getElementById('toastIcon').textContent = icon;
-        document.getElementById('toastMsg').textContent  = msg;
-        toast.className = 'ai-toast show ' + type;
-        clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => toast.className = 'ai-toast', duration);
-      }
+      // Draw skeleton (mirrored to match flipped video)
+      const mirroredLm = lm.map(pt => ({ ...pt, x: 1 - pt.x }));
+      drawConnectors(ctx, mirroredLm, POSE_CONNECTIONS, { color: 'rgba(11,155,188,0.8)', lineWidth: 2 });
+      drawLandmarks(ctx, mirroredLm, { color: '#17C5E0', fillColor: 'rgba(11,155,188,0.4)', lineWidth: 1, radius: 4 });
 
-      // ─── ANGLE CALCULATION ───────────────────────────────────────────
-      function calcAngle(a, b, c) {
-        // Vector from B→A and B→C
-        const v1x = a.x - b.x, v1y = a.y - b.y;
-        const v2x = c.x - b.x, v2y = c.y - b.y;
-        const dot  = v1x * v2x + v1y * v2y;
-        const mag1 = Math.sqrt(v1x * v1x + v1y * v1y);
-        const mag2 = Math.sqrt(v2x * v2x + v2y * v2y);
-        if (mag1 === 0 || mag2 === 0) return 0;
-        // Clamp to avoid floating-point domain error in acos
-        const cosAngle = Math.max(-1, Math.min(1, dot / (mag1 * mag2)));
-        return (Math.acos(cosAngle) * 180) / Math.PI;
+      // Branch to exercise-specific tracker
+      if (exerciseMode === 'knee') {
+        trackKneeExtension(ctx, lm, canvas.width, canvas.height);
+      } else {
+        trackBicepCurl(ctx, lm, canvas.width, canvas.height);
+      }
+    }
+
+    // ─── KNEE EXTENSION TRACKER ───────────────────────────────────────
+    function trackKneeExtension(ctx, lm, w, h) {
+      const { hip, knee, ankle, vis, side } = getBetterSide(lm);
+
+      if (vis < 0.4) {
+        setFeedback('warn', 'Visibilitas rendah', 'Pindah ke tempat lebih terang');
+        setAIStatus('orange', 'Visibilitas rendah');
+        return;
       }
 
-      function getBetterSide(landmarks) {
-        const lHip  = landmarks[23], lKnee = landmarks[25], lAnkle = landmarks[27];
-        const rHip  = landmarks[24], rKnee = landmarks[26], rAnkle = landmarks[28];
-        const lVis  = (lHip.visibility + lKnee.visibility + lAnkle.visibility) / 3;
-        const rVis  = (rHip.visibility + rKnee.visibility + rAnkle.visibility) / 3;
-        return lVis >= rVis
-          ? { hip: lHip, knee: lKnee, ankle: lAnkle, vis: lVis, side: 'kiri' }
-          : { hip: rHip, knee: rKnee, ankle: rAnkle, vis: rVis, side: 'kanan' };
-      }
+      const rawAngle  = calcAngle(hip, knee, ankle);
+      const kneeAngle = smoothAngle('knee', rawAngle);
+      document.getElementById('kneeAngleDisplay').textContent = Math.round(kneeAngle) + '°';
 
-      // ─── MEDIAPIPE POSE CALLBACK ─────────────────────────────────────
-      function onPoseResults(results) {
-        const canvas = document.getElementById('poseCanvas');
-        const video  = document.getElementById('videoElement');
-        const ctx    = canvas.getContext('2d');
+      // Highlight knee joint
+      highlightJoint(ctx, knee, kneeAngle, w, h, kneeAngle > 155 ? '#4ade80' : kneeAngle > 110 ? '#fbbf24' : '#f87171');
 
-        canvas.width  = video.videoWidth  || canvas.offsetWidth;
-        canvas.height = video.videoHeight || canvas.offsetHeight;
+      // Rep state machine — hysteresis thresholds
+      const EXTEND_THRESH = 158; // "up": leg extended
+      const BEND_THRESH   = 100; // "down": leg bent again
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // ── DRAW MIRRORED VIDEO FRAME ──
-        // We flip the canvas context here — NOT with CSS on the element.
-        // This keeps coordinate system consistent for landmark drawing.
-        ctx.save();
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        if (results.image) {
-          ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-        }
-        ctx.restore();
-
-        if (!results.poseLandmarks) {
-          setFeedback('warn', 'Postur tidak terdeteksi', 'Pastikan seluruh tubuh terlihat kamera');
-          setAIStatus('orange', 'Mendeteksi...');
-          return;
-        }
-
-        const lm = results.poseLandmarks;
-
-        // ── DRAW SKELETON ──
-        // MediaPipe landmarks are in 0-1 space (x=0 left, x=1 right of raw image).
-        // Since we flipped the video frame above, we need to flip landmarks too
-        // before drawing so the skeleton aligns with the mirrored video.
-        const mirroredLm = lm.map(pt => ({ ...pt, x: 1 - pt.x }));
-
-        drawConnectors(ctx, mirroredLm, POSE_CONNECTIONS, {
-          color: 'rgba(11,155,188,0.8)',
-          lineWidth: 2,
-        });
-        drawLandmarks(ctx, mirroredLm, {
-          color: '#17C5E0',
-          fillColor: 'rgba(11,155,188,0.4)',
-          lineWidth: 1,
-          radius: 4,
-        });
-
-        const { hip, knee, ankle, vis, side } = getBetterSide(lm);
-
-        if (vis < 0.4) {
-          setFeedback('warn', 'Visibilitas rendah', 'Pindah ke tempat lebih terang');
-          setAIStatus('orange', 'Visibilitas rendah');
-          return;
-        }
-
-        // ── COMPUTE & SMOOTH ANGLE ──
-        const rawAngle    = calcAngle(hip, knee, ankle);
-        const kneeAngle   = smoothAngle('knee', rawAngle);
-
-        document.getElementById('kneeAngleDisplay').textContent = Math.round(kneeAngle) + '°';
-
-        // ── HIGHLIGHT JOINT ON MIRRORED CANVAS ──
-        // Use mirrored x = (1 - knee.x) to match the flipped video frame
-        highlightKneeJoint(ctx, knee, kneeAngle, canvas.width, canvas.height);
-
-        // ── REP DETECTION with hysteresis ──
-        // Knee Extension: start bent (~70-100°), extend to ~160°+, return to bent
-        const EXTEND_THRESH = 158; // angle to register as "up" (extended)
-        const BEND_THRESH   = 100; // angle to register as "down" (bent again)
-        // Hysteresis: different thresholds for going up vs coming down
-        // prevents triggering at the same borderline value repeatedly
-
-        if (repState === 'down') {
-          if (kneeAngle > EXTEND_THRESH) {
-            const changed = updateRepState('up');
-            if (changed) {
-              setFeedback('ok', `Lutut ${side} lurus — tahan!`, `${Math.round(kneeAngle)}° ✓`);
-              setAIStatus('green', 'Postur OK');
-            }
-          } else if (kneeAngle > BEND_THRESH) {
-            setFeedback('ok', 'Luruskan kaki...', `Angle: ${Math.round(kneeAngle)}° (target >158°)`);
-          } else {
-            setFeedback('ok', 'Siap — angkat kaki untuk mulai', `Lutut ${side} terdeteksi`);
-            setAIStatus('green', 'AI Aktif');
-          }
-        } else if (repState === 'up') {
-          if (kneeAngle < BEND_THRESH) {
-            const changed = updateRepState('down');
-            if (changed && currentReps < TARGET_REPS) {
-              incrementRep();
-              showToast('good', '✅', `Rep ${currentReps}! Angle: ${Math.round(kneeAngle)}°`);
-              setFeedback('ok', 'Rep dihitung! Luruskan lagi.', `${currentReps} / ${TARGET_REPS} rep`);
-            }
-          } else if (kneeAngle < 165) {
-            setFeedback('warn', 'Luruskan lebih maksimal!', `${Math.round(kneeAngle)}° — target >158°`);
-            setAIStatus('orange', 'Perlu diperbaiki');
-          } else {
-            setFeedback('ok', 'Bagus! Tahan 2 detik...', `${Math.round(kneeAngle)}°`);
+      if (repState === 'down') {
+        if (kneeAngle > EXTEND_THRESH) {
+          if (updateRepState('up')) {
+            setFeedback('ok', `Lutut ${side} lurus — tahan!`, `${Math.round(kneeAngle)}° ✓`);
             setAIStatus('green', 'Postur OK');
           }
-        }
-
-        // ── UPDATE ACCURACY from landmark confidence ──
-        const avgConf  = (hip.visibility + knee.visibility + ankle.visibility) / 3;
-        const rawScore = Math.round(avgConf * 100);
-        const smoothed = Math.round((accuracy * 0.85) + (rawScore * 0.15));
-        const clamped  = Math.max(40, Math.min(100, smoothed));
-        if (cameraActive) {
-          accuracyReadings.push(clamped);
-          const avg = Math.round(accuracyReadings.reduce((a, b) => a + b, 0) / accuracyReadings.length);
-          updateAccuracy(Math.max(40, Math.min(100, avg)), false);
-        }
-      }
-
-      function highlightKneeJoint(ctx, knee, angle, w, h) {
-        // Mirror x to match the flipped canvas
-        const x = (1 - knee.x) * w;
-        const y = knee.y * h;
-
-        const color = angle > 155 ? '#4ade80' : angle > 110 ? '#fbbf24' : '#f87171';
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, 20, 0, Math.PI * 2);
-        ctx.fillStyle = color + '33';
-        ctx.fill();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.fillStyle = '#fff';
-        ctx.font      = 'bold 11px JetBrains Mono, monospace';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(Math.round(angle) + '°', x, y);
-        ctx.restore();
-      }
-
-      function setFeedback(type, main, sub) {
-        document.getElementById('feedbackBox').className    = 'feedback-box ' + type;
-        document.getElementById('feedbackMain').textContent = main;
-        document.getElementById('feedbackSub').textContent  = sub;
-      }
-
-      function setAIStatus(color, text) {
-        const dot    = document.getElementById('statusDot');
-        const txt    = document.getElementById('aiStatusText');
-        const foot   = document.getElementById('footerAIStatus');
-        const tabDot = document.getElementById('aiTabDot');
-        txt.textContent  = text;
-        foot.textContent = 'AI: ' + text;
-        const colors = { green: '#22c55e', orange: '#f59e0b', red: '#f87171', blue: '#17C5E0' };
-        const c = colors[color] || colors.blue;
-        dot.style.background   = c;
-        dot.style.boxShadow    = `0 0 6px ${c}`;
-        tabDot.style.background = c;
-        tabDot.style.boxShadow  = `0 0 6px ${c}`;
-      }
-
-      // ─── CAMERA CONTROL ──────────────────────────────────────────────
-      async function startCamera() {
-        const btn    = document.getElementById('startCamBtn');
-        const ring   = document.getElementById('loadingRing');
-        const pHolder = document.getElementById('placeholderContent');
-
-        btn.disabled    = true;
-        btn.textContent = 'Memuat MediaPipe AI...';
-        ring.classList.add('active');
-        pHolder.style.opacity = '0.5';
-
-        try {
-          pose = new Pose({
-            locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-          });
-
-          pose.setOptions({
-            modelComplexity: 2,          // ← bumped from 1 to 2 for better joint detection
-            smoothLandmarks: true,
-            enableSegmentation: false,
-            smoothSegmentation: false,
-            minDetectionConfidence: 0.6, // ← slightly higher to reduce false positives
-            minTrackingConfidence: 0.6,
-          });
-
-          pose.onResults(onPoseResults);
-
-          const video  = document.getElementById('videoElement');
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720, facingMode: 'user' },
-            audio: false,
-          });
-          video.srcObject = stream;
-          video.style.display = 'none'; // hide raw video — we draw it on canvas ourselves
-
-          document.getElementById('camPlaceholder').style.display   = 'none';
-          document.getElementById('cameraOverlayBot').style.display = 'flex';
-          document.getElementById('aiInfoBox').style.display        = 'flex';
-          document.getElementById('stopCamBtn').style.display       = 'block';
-          ring.classList.remove('active');
-          cameraActive = true;
-
+        } else if (kneeAngle > BEND_THRESH) {
+          setFeedback('ok', 'Luruskan kaki...', `${Math.round(kneeAngle)}° (target >158°)`);
+        } else {
+          setFeedback('ok', `Siap — angkat kaki ${side} untuk mulai`, `Lutut ${side} terdeteksi`);
           setAIStatus('green', 'AI Aktif');
-          showToast('info', '🤖', 'AI aktif! Duduk menyamping agar lutut terlihat jelas.');
-
-          mpCamera = new Camera(video, {
-            onFrame: async () => {
-              if (cameraActive && pose) await pose.send({ image: video });
-            },
-            width: 1280,
-            height: 720,
-          });
-          mpCamera.start();
-
-        } catch (err) {
-          ring.classList.remove('active');
-          btn.disabled = false;
-          pHolder.style.opacity = '1';
-
-          if (err.name === 'NotAllowedError') {
-            btn.textContent = '⚠ Kamera ditolak — izinkan akses';
-            showToast('warn', '⚠', 'Izin kamera ditolak. Gunakan tracker manual.');
-          } else if (err.name === 'NotFoundError') {
-            btn.textContent = '⚠ Kamera tidak ditemukan';
-            showToast('warn', '⚠', 'Tidak ada kamera. Gunakan tracker manual.');
-          } else {
-            btn.textContent = '⚠ Error — coba lagi';
-            btn.disabled    = false;
-            showToast('warn', '⚠', 'Gagal memuat AI: ' + err.message);
-            console.error('Camera/MediaPipe error:', err);
+        }
+      } else { // repState === 'up'
+        if (kneeAngle < BEND_THRESH) {
+          if (updateRepState('down') && currentReps < TARGET_REPS) {
+            incrementRep();
+            showToast('good', '✅', `Rep ${currentReps}! Angle: ${Math.round(kneeAngle)}°`);
+            setFeedback('ok', 'Rep dihitung! Luruskan lagi.', `${currentReps} / ${TARGET_REPS} rep`);
           }
+        } else if (kneeAngle < 165) {
+          setFeedback('warn', 'Luruskan lebih maksimal!', `${Math.round(kneeAngle)}° — target >158°`);
+          setAIStatus('orange', 'Perlu diperbaiki');
+        } else {
+          setFeedback('ok', 'Bagus! Tahan 2 detik...', `${Math.round(kneeAngle)}°`);
+          setAIStatus('green', 'Postur OK');
         }
       }
 
-      function stopCamera() {
-        if (mpCamera) { mpCamera.stop(); mpCamera = null; }
-        const video = document.getElementById('videoElement');
-        if (video.srcObject) {
-          video.srcObject.getTracks().forEach(t => t.stop());
-          video.srcObject = null;
+      updateAccuracyFromVis(hip.visibility, knee.visibility, ankle.visibility);
+    }
+
+    // ─── BICEP CURL TRACKER ───────────────────────────────────────────
+    function trackBicepCurl(ctx, lm, w, h) {
+      const { shoulder, elbow, wrist, vis, side } = getBetterElbowSide(lm);
+
+      if (vis < 0.35) {
+        setFeedback('warn', 'Lengan tidak terdeteksi', 'Hadapkan lengan ke kamera dari depan/samping');
+        setAIStatus('orange', 'Mendeteksi lengan...');
+        return;
+      }
+
+      const rawAngle   = calcAngle(shoulder, elbow, wrist);
+      const elbowAngle = smoothAngle('elbow', rawAngle);
+      document.getElementById('kneeAngleDisplay').textContent = Math.round(elbowAngle) + '°';
+
+      // Color: green = fully curled (<50°), yellow = mid, red = extended
+      const jColor = elbowAngle < 55 ? '#4ade80' : elbowAngle < 120 ? '#fbbf24' : '#f87171';
+      highlightJoint(ctx, elbow, elbowAngle, w, h, jColor);
+
+      // Rep state machine:
+      // "down" = arm extended (elbow angle > 140°) — starting position
+      // "up"   = arm fully curled (elbow angle < 50°) — top of curl
+      // Rep counted when: down→up→down (full curl and return)
+      const CURL_THRESH  = 50;  // fully curled = "up"
+      const EXTEND_BACK  = 140; // returned to start = "down"
+
+      if (repState === 'down') {
+        // Waiting to curl up
+        if (elbowAngle < CURL_THRESH) {
+          if (updateRepState('up')) {
+            setFeedback('ok', `Siku ${side} tekuk penuh — tahan!`, `${Math.round(elbowAngle)}° ✓`);
+            setAIStatus('green', 'Curl Sempurna!');
+          }
+        } else if (elbowAngle < 100) {
+          setFeedback('ok', 'Tekuk lebih dalam...', `${Math.round(elbowAngle)}° (target <50°)`);
+          setAIStatus('green', 'AI Aktif');
+        } else {
+          setFeedback('ok', `Siap — tekuk siku ${side} ke atas`, `Lengan terdeteksi, angle: ${Math.round(elbowAngle)}°`);
+          setAIStatus('green', 'AI Aktif');
         }
-        cameraActive = false;
+      } else { // repState === 'up'
+        // Waiting to return to extended
+        if (elbowAngle > EXTEND_BACK) {
+          if (updateRepState('down') && currentReps < TARGET_REPS) {
+            incrementRep();
+            showToast('good', '✅', `Rep ${currentReps}! Bicep curl ${side} sempurna!`);
+            setFeedback('ok', 'Rep dihitung! Tekuk lagi.', `${currentReps} / ${TARGET_REPS} rep`);
+          }
+        } else if (elbowAngle > 90) {
+          setFeedback('warn', 'Luruskan lengan sepenuhnya!', `${Math.round(elbowAngle)}° — target >140°`);
+          setAIStatus('orange', 'Luruskan dulu');
+        } else {
+          setFeedback('ok', 'Bagus! Turunkan perlahan...', `${Math.round(elbowAngle)}°`);
+          setAIStatus('green', 'Postur OK');
+        }
+      }
 
-        const canvas = document.getElementById('poseCanvas');
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      updateAccuracyFromVis(shoulder.visibility, elbow.visibility, wrist.visibility);
+    }
 
-        document.getElementById('camPlaceholder').style.display   = 'flex';
-        document.getElementById('cameraOverlayBot').style.display = 'none';
-        document.getElementById('aiInfoBox').style.display        = 'none';
-        document.getElementById('stopCamBtn').style.display       = 'none';
-        document.getElementById('placeholderContent').style.opacity = '1';
+    // ─── SHARED JOINT HIGHLIGHT ───────────────────────────────────────
+    function highlightJoint(ctx, landmark, angle, w, h, color) {
+      // Mirror x to match flipped canvas
+      const x = (1 - landmark.x) * w;
+      const y = landmark.y * h;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = color + '33';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font      = 'bold 11px JetBrains Mono, monospace';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round(angle) + '°', x, y);
+      ctx.restore();
+    }
 
-        const btn = document.getElementById('startCamBtn');
+    // ─── ACCURACY from landmark visibility ────────────────────────────
+    function updateAccuracyFromVis(v1, v2, v3) {
+      if (!cameraActive) return;
+      const avgConf  = (v1 + v2 + v3) / 3;
+      const rawScore = Math.round(avgConf * 100);
+      const smoothed = Math.round((accuracy * 0.85) + (rawScore * 0.15));
+      const clamped  = Math.max(40, Math.min(100, smoothed));
+      accuracyReadings.push(clamped);
+      if (accuracyReadings.length > 60) accuracyReadings.shift(); // keep rolling 60-frame window
+      const avg = Math.round(accuracyReadings.reduce((a, b) => a + b, 0) / accuracyReadings.length);
+      updateAccuracy(Math.max(40, Math.min(100, avg)), false);
+    }
+
+    // ─── FEEDBACK & STATUS ────────────────────────────────────────────
+    function setFeedback(type, main, sub) {
+      document.getElementById('feedbackBox').className    = 'feedback-box ' + type;
+      document.getElementById('feedbackMain').textContent = main;
+      document.getElementById('feedbackSub').textContent  = sub;
+    }
+
+    function setAIStatus(color, text) {
+      const dot    = document.getElementById('statusDot');
+      const txt    = document.getElementById('aiStatusText');
+      const foot   = document.getElementById('footerAIStatus');
+      const tabDot = document.getElementById('aiTabDot');
+      txt.textContent  = text;
+      foot.textContent = 'AI: ' + text;
+      const colors = { green: '#22c55e', orange: '#f59e0b', red: '#f87171', blue: '#17C5E0' };
+      const c = colors[color] || colors.blue;
+      dot.style.background    = c;
+      dot.style.boxShadow     = `0 0 6px ${c}`;
+      tabDot.style.background  = c;
+      tabDot.style.boxShadow   = `0 0 6px ${c}`;
+    }
+
+    // ─── CAMERA CONTROL ───────────────────────────────────────────────
+    async function startCamera() {
+      const btn     = document.getElementById('startCamBtn');
+      const ring    = document.getElementById('loadingRing');
+      const pHolder = document.getElementById('placeholderContent');
+
+      btn.disabled    = true;
+      btn.textContent = 'Memuat MediaPipe AI...';
+      ring.classList.add('active');
+      pHolder.style.opacity = '0.5';
+
+      try {
+        pose = new Pose({
+          locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+        });
+
+        pose.setOptions({
+          modelComplexity: 2,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          smoothSegmentation: false,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6,
+        });
+
+        pose.onResults(onPoseResults);
+
+        const video  = document.getElementById('videoElement');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 1280, height: 720, facingMode: 'user' },
+          audio: false,
+        });
+        video.srcObject = stream;
+        video.style.display = 'none';
+
+        document.getElementById('camPlaceholder').style.display   = 'none';
+        document.getElementById('cameraOverlayBot').style.display = 'flex';
+        document.getElementById('aiInfoBox').style.display        = 'flex';
+        document.getElementById('stopCamBtn').style.display       = 'block';
+        ring.classList.remove('active');
+        cameraActive = true;
+
+        setAIStatus('green', 'AI Aktif');
+
+        const modeMsg = exerciseMode === 'knee'
+          ? 'AI aktif! Duduk menyamping agar lutut terlihat jelas.'
+          : 'AI aktif! Hadapkan lengan ke kamera, tekuk-luruskan siku.';
+        showToast('info', '🤖', modeMsg);
+
+        mpCamera = new Camera(video, {
+          onFrame: async () => {
+            if (cameraActive && pose) await pose.send({ image: video });
+          },
+          width: 1280,
+          height: 720,
+        });
+        mpCamera.start();
+
+      } catch (err) {
+        ring.classList.remove('active');
         btn.disabled = false;
-        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg> Aktifkan Kamera + AI`;
+        pHolder.style.opacity = '1';
 
-        setAIStatus('orange', 'Kamera dimatikan');
+        if (err.name === 'NotAllowedError') {
+          btn.textContent = '⚠ Kamera ditolak — izinkan akses';
+          showToast('warn', '⚠', 'Izin kamera ditolak. Gunakan tracker manual.');
+        } else if (err.name === 'NotFoundError') {
+          btn.textContent = '⚠ Kamera tidak ditemukan';
+          showToast('warn', '⚠', 'Tidak ada kamera. Gunakan tracker manual.');
+        } else {
+          btn.textContent = '⚠ Error — coba lagi';
+          btn.disabled    = false;
+          showToast('warn', '⚠', 'Gagal memuat AI: ' + err.message);
+          console.error('Camera/MediaPipe error:', err);
+        }
       }
+    }
 
-      // ─── FINISH MODAL ────────────────────────────────────────────────
-      function openFinishModal() {
-        if (timerRunning) timerToggle();
-        if (cameraActive) stopCamera();
-        const setsCount = Math.max(completedSets, currentReps > 0 ? 1 : 0);
-        document.getElementById('modalReps').textContent = totalReps;
-        document.getElementById('modalSets').textContent = setsCount;
-        document.getElementById('modalTime').textContent = document.getElementById('timerDisplay').textContent;
-        document.getElementById('modalAcc').textContent  = accuracy + '%';
-        document.getElementById('hiddenReps').value      = totalReps;
-        document.getElementById('hiddenSets').value      = setsCount;
-        document.getElementById('hiddenDuration').value  = timerSec;
-        document.getElementById('hiddenAccuracy').value  = accuracy;
-        document.getElementById('modalIcon').textContent = accuracy >= 80 ? '⭐' : '🏁';
-        document.getElementById('finishModal').classList.add('open');
+    function stopCamera() {
+      if (mpCamera) { mpCamera.stop(); mpCamera = null; }
+      const video = document.getElementById('videoElement');
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
       }
-      function closeFinishModal() {
-        document.getElementById('finishModal').classList.remove('open');
-      }
-      document.getElementById('finishModal').addEventListener('click', function(e) {
-        if (e.target === this) closeFinishModal();
-      });
+      cameraActive = false;
 
-      // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
-      document.addEventListener('keydown', function(e) {
-        if (e.target.tagName === 'INPUT') return;
-        if (e.code === 'Space')     { e.preventDefault(); incrementRep(); }
-        if (e.code === 'Backspace') { e.preventDefault(); decrementRep(); }
-        if (e.code === 'KeyT')      { timerToggle(); }
-        if (e.code === 'KeyN')      { if (currentReps >= TARGET_REPS) nextSet(); }
-        if (e.code === 'KeyF')      { openFinishModal(); }
-      });
+      const canvas = document.getElementById('poseCanvas');
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
-      // ─── INIT ────────────────────────────────────────────────────────
-      updatePips();
-      updateOverall();
-      updateSetBadges();
+      document.getElementById('camPlaceholder').style.display   = 'flex';
+      document.getElementById('cameraOverlayBot').style.display = 'none';
+      document.getElementById('aiInfoBox').style.display        = 'none';
+      document.getElementById('stopCamBtn').style.display       = 'none';
+      document.getElementById('placeholderContent').style.opacity = '1';
+
+      const btn = document.getElementById('startCamBtn');
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg> Aktifkan Kamera + AI`;
+
+      setAIStatus('orange', 'Kamera dimatikan');
+    }
+
+    // ─── FINISH MODAL ─────────────────────────────────────────────────
+    function openFinishModal() {
+      if (timerRunning) timerToggle();
+      if (cameraActive) stopCamera();
+      const setsCount = Math.max(completedSets, currentReps > 0 ? 1 : 0);
+      document.getElementById('modalReps').textContent = totalReps;
+      document.getElementById('modalSets').textContent = setsCount;
+      document.getElementById('modalTime').textContent = document.getElementById('timerDisplay').textContent;
+      document.getElementById('modalAcc').textContent  = accuracy + '%';
+      document.getElementById('hiddenReps').value      = totalReps;
+      document.getElementById('hiddenSets').value      = setsCount;
+      document.getElementById('hiddenDuration').value  = timerSec;
+      document.getElementById('hiddenAccuracy').value  = accuracy;
+      document.getElementById('modalIcon').textContent = accuracy >= 80 ? '⭐' : '🏁';
+      document.getElementById('finishModal').classList.add('open');
+    }
+    function closeFinishModal() {
+      document.getElementById('finishModal').classList.remove('open');
+    }
+    document.getElementById('finishModal').addEventListener('click', function(e) {
+      if (e.target === this) closeFinishModal();
+    });
+
+    // ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.code === 'Space')     { e.preventDefault(); incrementRep(); }
+      if (e.code === 'Backspace') { e.preventDefault(); decrementRep(); }
+      if (e.code === 'KeyT')      { timerToggle(); }
+      if (e.code === 'KeyN')      { if (currentReps >= TARGET_REPS) nextSet(); }
+      if (e.code === 'KeyF')      { openFinishModal(); }
+      // K = switch to knee, B = switch to bicep
+      if (e.code === 'KeyK')      { setExerciseMode('knee', document.getElementById('modeKnee')); }
+      if (e.code === 'KeyB')      { setExerciseMode('bicep', document.getElementById('modeBicep')); }
+    });
+
+    // ─── INIT ─────────────────────────────────────────────────────────
+    updatePips();
+    updateOverall();
+    updateSetBadges();
   </script>
 </body>
 </html>
